@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CatFeed Pro - Analytics & History</title>
+    <style>
+        :root {
+            --bg-app: #F5F5F7;
+            --bg-card: #FFFFFF;
+            --text-primary: #000000;
+            --text-secondary: #6E6E73;
+            --text-tertiary: #A1A1A6;
+            --accent-purple: #C4B0EA;
+            --accent-purple-light: #F2ECFB;
+            --radius-l: 32px;
+            --radius-m: 24px;
+            --radius-s: 12px;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --gap: 24px;
+            --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            outline: none;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-app);
+            color: var(--text-primary);
+            height: 100vh;
+            width: 1440px;
+            height: 900px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            grid-template-rows: auto 1fr;
+            gap: var(--gap);
+            padding: var(--gap);
+            height: 100%;
+            width: 100%;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 12px;
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .brand-dot {
+            width: 12px;
+            height: 12px;
+            background: var(--text-primary);
+            border-radius: 50%;
+        }
+
+        .nav-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-item {
+            padding: 14px 20px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .nav-item.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: var(--gap);
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-m);
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        .btn-ghost {
+            background: var(--bg-app);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-export {
+            background: var(--text-primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-container {
+            height: 200px;
+            width: 100%;
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            padding-top: 20px;
+        }
+
+        .chart-bar-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-bar {
+            width: 100%;
+            background: var(--accent-purple-light);
+            border-radius: 6px 6px 2px 2px;
+            position: relative;
+            transition: height 1s ease-out;
+            min-height: 4px;
+        }
+
+        .chart-bar.active {
+            background: var(--accent-purple);
+        }
+
+        .chart-label {
+            font-size: 10px;
+            color: var(--text-tertiary);
+            font-weight: 600;
+        }
+
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 16px;
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 20px;
+            bottom: -20px;
+            width: 2px;
+            background: var(--bg-app);
+        }
+
+        .timeline-item:last-child::before { display: none; }
+
+        .timeline-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-purple);
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px var(--accent-purple-light);
+            z-index: 1;
+            margin-top: 4px;
+        }
+
+        .timeline-content {
+            flex: 1;
+            background: var(--bg-app);
+            padding: 12px 16px;
+            border-radius: 16px;
+        }
+
+        .timeline-time {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .timeline-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .stats-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-box {
+            background: var(--bg-app);
+            padding: 16px;
+            border-radius: 20px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .resource-line-chart {
+            height: 120px;
+            width: 100%;
+            background: linear-gradient(transparent 99%, #eee 99%);
+            background-size: 100% 20px;
+            position: relative;
+            margin-top: 20px;
+        }
+
+        .svg-chart {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: var(--accent-purple-light);
+            color: #7A5DC7;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <a href="/" class="brand">
+                <div class="brand-dot"></div>
+                CatFeed Pro
+            </a>
+            <button class="btn-export" onclick="exportData()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
+                Export Report
+            </button>
+        </header>
+
+        <aside class="nav-sidebar">
+            <a href="/" class="nav-item">
+                🏠 Dashboard
+            </a>
+            <a href="/analytics" class="nav-item active">
+                📊 Analytics
+            </a>
+            <a href="/history" class="nav-item">
+                📅 History
+            </a>
+            <a href="/settings" class="nav-item">
+                ⚙️ Settings
+            </a>
+        </aside>
+
+        <main class="main-content">
+            <div style="display: flex; flex-direction: column; gap: var(--gap);">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Food Consumption</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-ghost" onclick="changeTimeRange('day')">Day</button>
+                            <button class="btn-ghost active" style="background: var(--text-primary); color: white;" onclick="changeTimeRange('week')">Week</button>
+                            <button class="btn-ghost" onclick="changeTimeRange('month')">Month</button>
+                        </div>
+                    </div>
+                    <div class="chart-container" id="consumption-chart">
+                        <div class="chart-bar-wrapper">
+                            <div class="chart-bar" style="height: 60%;"></div>
+                            <span class="chart-label">MON</span>
+                        </div>
+                        <div class="chart-bar-wrapper">
+                            <div class="chart-bar" style="height: 45%;"></div>
+                            <span class="chart-label">TUE</span>
+                        </div>
+                        <div class="chart-bar-wrapper">
+                            <div class="chart-bar" style="height: 85%;"></div>
+                            <span class="chart-label">WED</span>
+                        </div>
+                        <div class="chart-bar-wrapper">
+                            <div class="chart-bar active" style="height: 100%;"></div>
+                            <span class="chart-label">THU</span>
+                        </div>
+                        <div class="chart-bar-wrapper">
+                            <div class="chart-bar" style="height: 70%;"></div>
+                            <span class="chart-label">FRI</span>
+                        </div>
+                        <div class="chart-bar-wrapper">
+                            <div class="chart-bar" style="height: 30%;"></div>
+                            <span class="chart-label">SAT</span>
+                        </div>
+                        <div class="chart-bar-wrapper">
+                            <div class="chart-bar" style="height: 55%;"></div>
+                            <span class="chart-label">SUN</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Resource Depletion (24h)</span>
+                        <div class="status-badge" id="resource-status">Stable</div>
+                    </div>
+                    <div class="resource-line-chart">
+                        <svg class="svg-chart" viewBox="0 0 600 120">
+                            <path d="M0,20 Q150,25 300,50 T600,80" fill="none" stroke="var(--accent-purple)" stroke-width="3"></path>
+                            <path d="M0,40 Q100,45 200,60 T400,90 T600,110" fill="none" stroke="#89CFF0" stroke-width="3"></path>
+                        </svg>
+                        <div style="display:flex; gap: 16px; margin-top: 12px;">
+                            <div style="display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-secondary);">
+                                <div style="width:8px; height:8px; border-radius:50%; background:var(--accent-purple);"></div> Food
+                            </div>
+                            <div style="display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-secondary);">
+                                <div style="width:8px; height:8px; border-radius:50%; background:#89CFF0;"></div> Water
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title" style="margin-bottom: 20px;">Cat Presence Activity</div>
+                    <div class="stats-summary">
+                        <div class="stat-box">
+                            <div class="stat-label">Avg. Visits / Day</div>
+                            <div class="stat-value" id="avg-visits">8.4</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Time at Bowl</div>
+                            <div class="stat-value" id="time-at-bowl">42m <span style="font-size:14px; color:var(--text-tertiary);">total</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="height: 100%; overflow-y: auto;">
+                <div class="card-header">
+                    <span class="card-title">Activity History</span>
+                </div>
+                <div class="timeline" id="activity-timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-time">12:30 PM</div>
+                            <div class="timeline-desc">Scheduled feed: 10g dispensed</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot" style="background:#4CD964; box-shadow: 0 0 0 2px #E8F9ED;"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-time">11:15 AM</div>
+                            <div class="timeline-desc">Cat detected: 4 min duration</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-time">09:40 AM</div>
+                            <div class="timeline-desc">Manual feed: 20g dispensed</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot" style="background:#4CD964; box-shadow: 0 0 0 2px #E8F9ED;"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-time">07:22 AM</div>
+                            <div class="timeline-desc">Cat detected: 7 min duration</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-time">07:00 AM</div>
+                            <div class="timeline-desc">Scheduled feed: 20g dispensed</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function changeTimeRange(range) {
+            const buttons = document.querySelectorAll('.btn-ghost');
+            buttons.forEach(btn => {
+                btn.style.background = 'var(--bg-app)';
+                btn.style.color = 'var(--text-primary)';
+            });
+            event.target.style.background = 'var(--text-primary)';
+            event.target.style.color = 'white';
+        }
+
+        function exportData() {
+            alert('Export functionality will download analytics report');
+        }
+
+        function updateAnalytics() {
+            fetch('/api/status')
+                .then(res => res.json())
+                .then(data => {
+                    // Update resource status based on food and water levels
+                    const foodLevel = data.state?.food_level || 0;
+                    const waterLevel = data.state?.water_level || 0;
+                    const avgLevel = (foodLevel + waterLevel) / 2;
+
+                    const statusBadge = document.getElementById('resource-status');
+                    if (avgLevel > 50) {
+                        statusBadge.textContent = 'Stable';
+                        statusBadge.style.background = 'var(--accent-purple-light)';
+                        statusBadge.style.color = '#7A5DC7';
+                    } else if (avgLevel > 20) {
+                        statusBadge.textContent = 'Low';
+                        statusBadge.style.background = '#FFF3CD';
+                        statusBadge.style.color = '#856404';
+                    } else {
+                        statusBadge.textContent = 'Critical';
+                        statusBadge.style.background = '#FFE5E5';
+                        statusBadge.style.color = '#FF3B30';
+                    }
+                })
+                .catch(err => console.error('Error fetching analytics:', err));
+        }
+
+        // Update analytics every 5 seconds
+        updateAnalytics();
+        setInterval(updateAnalytics, 5000);
+    </script>
+</body>
+</html>

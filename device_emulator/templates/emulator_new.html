@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CatFeed Pro - Dashboard</title>
+    <style>
+        :root {
+            --bg-app: #F5F5F7;
+            --bg-card: #FFFFFF;
+            --text-primary: #000000;
+            --text-secondary: #6E6E73;
+            --text-tertiary: #A1A1A6;
+            --accent-purple: #C4B0EA;
+            --accent-purple-light: #F2ECFB;
+            --radius-l: 32px;
+            --radius-m: 24px;
+            --radius-s: 12px;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --gap: 24px;
+            --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --overlay: rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            outline: none;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-app);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 300px 1fr 360px;
+            grid-template-rows: auto 1fr;
+            gap: var(--gap);
+            padding: var(--gap);
+            height: 100vh;
+            max-width: 1440px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 12px;
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-dot {
+            width: 12px;
+            height: 12px;
+            background: var(--text-primary);
+            border-radius: 50%;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .nav-link {
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .nav-link:hover {
+            background: rgba(0, 0, 0, 0.04);
+        }
+
+        .nav-link.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .col-left, .col-center, .col-right {
+            display: flex;
+            flex-direction: column;
+            gap: var(--gap);
+            min-height: 0;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-m);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+            transition: var(--transition);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .value-large {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1;
+        }
+
+        .value-unit {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-left: 4px;
+        }
+
+        /* 3D Model Viewer */
+        .model-viewer {
+            flex: 1;
+            background: var(--bg-card);
+            border-radius: var(--radius-l);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #model-canvas {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        #model-canvas:active {
+            cursor: grabbing;
+        }
+
+        .model-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .model-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .model-btn:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+        }
+
+        .model-btn.active {
+            background: var(--accent-purple);
+            color: white;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background: var(--bg-card);
+            border-radius: var(--radius-m);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .portion-selector {
+            display: flex;
+            gap: 8px;
+        }
+
+        .portion-btn {
+            flex: 1;
+            height: 48px;
+            border-radius: 14px;
+            border: 1px solid #E5E5EA;
+            background: transparent;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .portion-btn.active {
+            background: var(--text-primary);
+            border-color: var(--text-primary);
+            color: #fff;
+        }
+
+        .btn-primary {
+            background: var(--text-primary);
+            color: #fff;
+            border: none;
+            padding: 18px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-left: 32px;
+            padding-right: 12px;
+        }
+
+        .btn-secondary {
+            background: #F2F2F7;
+            color: var(--text-primary);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* Schedule */
+        .schedule-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .schedule-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: var(--bg-app);
+            border-radius: 18px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .schedule-item:hover {
+            transform: scale(1.02);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--overlay);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: white;
+            width: 440px;
+            border-radius: var(--radius-l);
+            padding: 32px;
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .input-pill {
+            width: 100%;
+            padding: 16px 20px;
+            background: #F2F2F7;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 500;
+            font-family: inherit;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        .btn-full {
+            flex: 1;
+            padding: 16px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #E5E5EA;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #34C759;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Resources */
+        .resource-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .level-container {
+            height: 140px;
+            background: #F2F2F7;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .level-bar {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: var(--accent-purple);
+            transition: height 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .level-water {
+            background: #89CFF0;
+        }
+
+        /* Sensors */
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .sensor-tile {
+            background: #F8F8FA;
+            padding: 16px;
+            border-radius: 18px;
+        }
+
+        .status-pill {
+            background: var(--accent-purple-light);
+            color: #7A5DC7;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-online {
+            background: #E8F9ED;
+            color: #34C759;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1C1C1E;
+            color: white;
+            padding: 16px 28px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            z-index: 2000;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .settings-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .settings-btn:hover {
+            background: #F2F2F7;
+        }
+
+        /* Sliders */
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+            background: #E5E5EA;
+            margin: 12px 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--text-primary);
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--text-primary);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <div class="brand">
+                <div class="brand-dot"></div>
+                CatFeed Pro
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link active">🏠 Dashboard</a>
+                <a href="/analytics" class="nav-link">📊 Analytics</a>
+                <a href="/history" class="nav-link">📅 History</a>
+                <a href="/settings" class="nav-link">⚙️ Settings</a>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <div class="status-pill status-online" id="connection-status">● Online</div>
+                <button class="settings-btn" onclick="openModal('deviceSettingsModal')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Left Column: Sensors & Resources -->
+        <div class="col-left">
+            <div class="card">
+                <div class="card-title">Presence Sensor</div>
+                <div style="display: flex; align-items: center; gap: 16px; margin-top: 16px;">
+                    <div style="width: 60px; height: 60px; background: #F2F2F7; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px;" id="cat-emoji">🐱</div>
+                    <div>
+                        <div class="value-large"><span id="bowl-weight">0</span><span class="value-unit">g</span></div>
+                        <span class="label">Bowl Weight</span>
+                    </div>
+                </div>
+                <button class="btn-secondary" style="margin-top: 20px;" onclick="toggleCat()">Toggle Cat</button>
+                <button class="btn-secondary" onclick="tareScale()">Tare Scale</button>
+            </div>
+
+            <div class="card" style="flex: 1;">
+                <div class="card-title" style="margin-bottom: 20px;">Environment</div>
+                <div class="sensor-grid">
+                    <div class="sensor-tile">
+                        <span class="label">Temp</span>
+                        <div style="font-size: 18px; font-weight: 700;" id="temperature">22°C</div>
+                        <input type="range" min="15" max="35" value="22" oninput="updateTemperature(this.value)">
+                    </div>
+                    <div class="sensor-tile">
+                        <span class="label">WiFi</span>
+                        <div style="font-size: 18px; font-weight: 700;" id="wifi-signal">-42dB</div>
+                    </div>
+                    <div class="sensor-tile">
+                        <span class="label">Battery</span>
+                        <div style="font-size: 18px; font-weight: 700;" id="battery">98%</div>
+                    </div>
+                    <div class="sensor-tile">
+                        <span class="label">Door</span>
+                        <div style="font-size: 18px; font-weight: 700;" id="door-status">Closed</div>
+                        <button class="btn-secondary" style="margin-top: 8px; font-size: 11px; padding: 6px 12px;" onclick="toggleDoor()">Toggle</button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 32px;">
+                    <div class="card-title" style="margin-bottom: 16px;">Resources</div>
+                    <div class="resource-grid">
+                        <div>
+                            <span class="label">Food <span id="food-percent">75</span>%</span>
+                            <div class="level-container">
+                                <div class="level-bar" id="food-level" style="height: 75%;"></div>
+                            </div>
+                            <input type="range" min="0" max="100" value="75" oninput="updateFoodLevel(this.value)">
+                        </div>
+                        <div>
+                            <span class="label">Water <span id="water-percent">40</span>%</span>
+                            <div class="level-container">
+                                <div class="level-bar level-water" id="water-level" style="height: 40%;"></div>
+                            </div>
+                            <input type="range" min="0" max="100" value="40" oninput="updateWaterLevel(this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Column: 3D Viewer & Controls -->
+        <div class="col-center">
+            <div class="model-viewer">
+                <canvas id="model-canvas"></canvas>
+                <div class="model-controls">
+                    <button class="model-btn" id="auto-rotate-btn" onclick="toggleAutoRotate()">🔄 Auto</button>
+                    <button class="model-btn" id="reset-view-btn" onclick="resetModelView()">🎯 Reset</button>
+                    <button class="model-btn" id="wireframe-btn" onclick="toggleWireframe()">📐 Wire</button>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="card-title">Manual Feed</span>
+                    <span class="label" style="margin-bottom: 0;">Today: <span id="feedings-today">0</span>g</span>
+                </div>
+                <div class="portion-selector">
+                    <button class="portion-btn active" onclick="setPortion(10, this)">10g</button>
+                    <button class="portion-btn" onclick="setPortion(20, this)">20g</button>
+                    <button class="portion-btn" onclick="setPortion(50, this)">50g</button>
+                </div>
+                <button class="btn-primary" onclick="feedNow()">
+                    Dispense Now
+                    <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Column: Schedule -->
+        <div class="col-right">
+            <div class="card" style="flex: 1;">
+                <div class="card-header">
+                    <span class="card-title">Feeding Schedule</span>
+                    <button class="btn-secondary" onclick="openModal('scheduleModal')">+ Add</button>
+                </div>
+
+                <div class="schedule-list" id="schedule-list">
+                    <!-- Schedule items will be inserted here -->
+                </div>
+
+                <div style="margin-top: auto; padding-top: 24px; border-top: 1px solid #F2F2F7;">
+                    <span class="label">Device Status</span>
+                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+                        <div><strong>Device ID:</strong> <span id="device-id">feeder_001</span></div>
+                        <div><strong>Firmware:</strong> <span id="firmware">v1.0.0</span></div>
+                        <div><strong>Motor:</strong> <span id="motor-status">idle</span></div>
+                    </div>
+                    <button class="btn-secondary" style="margin-top: 12px; width: 100%;" onclick="simulateMotorError()">⚠️ Motor Error</button>
+                    <button class="btn-secondary" style="margin-top: 8px; width: 100%;" onclick="resetMotor()">✅ Reset Motor</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Modal -->
+    <div id="scheduleModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="scheduleModalTitle">New Feeding</h2>
+            </div>
+            <div class="form-group">
+                <label class="label">Time</label>
+                <input type="time" class="input-pill" value="08:00" id="feedTime">
+            </div>
+            <div class="form-group">
+                <label class="label">Portion (grams)</label>
+                <input type="number" class="input-pill" value="20" id="feedAmount">
+            </div>
+            <div class="btn-group">
+                <button class="btn-full" style="background: #F2F2F7;" onclick="closeModal('scheduleModal')">Cancel</button>
+                <button class="btn-full" style="background: var(--text-primary); color: white;" onclick="saveFeeding()">Save Schedule</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device Settings Modal -->
+    <div id="deviceSettingsModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Device Settings</h2>
+            </div>
+            <div class="form-group">
+                <label class="label">Device Name</label>
+                <input type="text" class="input-pill" value="Living Room Feeder">
+            </div>
+            <div class="form-group">
+                <label class="label">Status LEDs</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #F2F2F7; padding: 14px 20px; border-radius: 16px;">
+                    <span style="font-weight: 500;">Enabled</span>
+                    <label class="switch">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="label">Firmware</label>
+                <div style="font-size: 14px; color: var(--text-secondary);">Version 2.4.1 (Latest)</div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-full" style="background: var(--text-primary); color: white;" onclick="closeModal('deviceSettingsModal')">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="mainToast" class="toast">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="3"><path d="M20 6L9 17l-5-5"></path></svg>
+        <span id="toastText">Success</span>
+    </div>
+
+    <!-- Three.js for 3D Model -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        let scene3D, camera3D, renderer3D, controls3D, model3D;
+        let autoRotate = false;
+        let wireframeMode = false;
+        let activePortion = 10;
+        let currentSchedule = [];
+
+        // Initialize 3D Viewer
+        function init3DViewer() {
+            const canvas = document.getElementById('model-canvas');
+
+            // Scene
+            scene3D = new THREE.Scene();
+            scene3D.background = new THREE.Color(0xffffff);
+
+            // Camera
+            camera3D = new THREE.PerspectiveCamera(
+                45,
+                canvas.clientWidth / canvas.clientHeight,
+                0.1,
+                1000
+            );
+            camera3D.position.set(6, 5, 6);
+
+            // Renderer
+            renderer3D = new THREE.WebGLRenderer({
+                canvas,
+                antialias: true,
+                alpha: true
+            });
+            renderer3D.setSize(canvas.clientWidth, canvas.clientHeight);
+            renderer3D.setPixelRatio(window.devicePixelRatio);
+            renderer3D.shadowMap.enabled = true;
+            renderer3D.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer3D.outputColorSpace = THREE.SRGBColorSpace;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene3D.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene3D.add(directionalLight);
+
+            const spotLight = new THREE.SpotLight(0xffa500, 0.4);
+            spotLight.position.set(-5, 8, -5);
+            scene3D.add(spotLight);
+
+            const fillLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.5);
+            scene3D.add(fillLight);
+
+            // Floor
+            const floorGeometry = new THREE.PlaneGeometry(20, 20);
+            const floorMaterial = new THREE.ShadowMaterial({ opacity: 0.1 });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene3D.add(floor);
+
+            // Grid
+            const gridHelper = new THREE.GridHelper(20, 20, 0xcccccc, 0xe0e0e0);
+            gridHelper.material.opacity = 0.1;
+            gridHelper.material.transparent = true;
+            scene3D.add(gridHelper);
+
+            // Controls
+            controls3D = new OrbitControls(camera3D, canvas);
+            controls3D.target.set(0, 1, 0);
+            controls3D.enableDamping = true;
+            controls3D.dampingFactor = 0.08;
+            controls3D.minDistance = 4;
+            controls3D.maxDistance = 18;
+            controls3D.maxPolarAngle = Math.PI / 2.2;
+            controls3D.autoRotate = false;
+            controls3D.autoRotateSpeed = 2.0;
+            controls3D.zoomSpeed = 0.3;
+            controls3D.panSpeed = 0.5;
+            controls3D.enablePan = true;
+            controls3D.update();
+
+            // Load Model
+            const loader = new GLTFLoader();
+            loader.load(
+                '/static/models/scene.gltf',
+                function (gltf) {
+                    model3D = gltf.scene;
+
+                    model3D.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                            if (child.material) {
+                                child.material.envMapIntensity = 1.5;
+                            }
+                        }
+                    });
+
+                    // Center and scale model
+                    const box = new THREE.Box3().setFromObject(model3D);
+                    const center = box.getCenter(new THREE.Vector3());
+                    const size = box.getSize(new THREE.Vector3());
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const scale = 3 / maxDim;
+
+                    model3D.scale.multiplyScalar(scale);
+                    model3D.position.sub(center.multiplyScalar(scale));
+                    model3D.position.y = (size.y * scale) / 2;
+
+                    scene3D.add(model3D);
+                },
+                function (xhr) {
+                    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+                },
+                function (error) {
+                    console.error('Error loading model:', error);
+                }
+            );
+
+            // Handle window resize
+            function handleResize() {
+                const width = canvas.clientWidth;
+                const height = canvas.clientHeight;
+                camera3D.aspect = width / height;
+                camera3D.updateProjectionMatrix();
+                renderer3D.setSize(width, height, false);
+            }
+
+            window.addEventListener('resize', handleResize);
+
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                controls3D.update();
+                renderer3D.render(scene3D, camera3D);
+            }
+            animate();
+        }
+
+        // 3D Viewer Controls
+        window.toggleAutoRotate = function() {
+            autoRotate = !autoRotate;
+            controls3D.autoRotate = autoRotate;
+            const btn = document.getElementById('auto-rotate-btn');
+            btn.classList.toggle('active', autoRotate);
+        };
+
+        window.resetModelView = function() {
+            camera3D.position.set(6, 5, 6);
+            controls3D.target.set(0, 1, 0);
+            controls3D.update();
+        };
+
+        window.toggleWireframe = function() {
+            wireframeMode = !wireframeMode;
+            if (model3D) {
+                model3D.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material.wireframe = wireframeMode;
+                    }
+                });
+            }
+            const btn = document.getElementById('wireframe-btn');
+            btn.classList.toggle('active', wireframeMode);
+        };
+
+        // Initialize 3D viewer when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            init3DViewer();
+        });
+
+        // Portion selector
+        window.setPortion = function(val, btn) {
+            activePortion = val;
+            document.querySelectorAll('.portion-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        };
+
+        // Modal functions
+        window.openModal = function(id) {
+            const modal = document.getElementById(id);
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+        };
+
+        window.closeModal = function(id) {
+            const modal = document.getElementById(id);
+            modal.classList.remove('active');
+            setTimeout(() => modal.style.display = 'none', 300);
+        };
+
+        // Toast
+        window.showToast = function(msg) {
+            const toast = document.getElementById('mainToast');
+            document.getElementById('toastText').innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        };
+
+        // API Functions
+        window.updateStatus = function() {
+            fetch('/api/status')
+                .then(res => res.json())
+                .then(data => {
+                    // Update device info
+                    document.getElementById('device-id').textContent = data.device_id;
+                    document.getElementById('firmware').textContent = data.firmware_version;
+                    document.getElementById('motor-status').textContent = data.motor_status;
+                    document.getElementById('feedings-today').textContent = data.total_feedings_today;
+
+                    // Update sensors
+                    document.getElementById('temperature').textContent = `${data.temperature.toFixed(1)}°C`;
+                    document.getElementById('wifi-signal').textContent = `${data.wifi_signal} dBm`;
+                    document.getElementById('bowl-weight').textContent = data.weight_bowl;
+                    document.getElementById('battery').textContent = `${Math.round(data.battery_level)}%`;
+                    document.getElementById('door-status').textContent = data.door_open ? 'Open' : 'Closed';
+
+                    // Update cat status
+                    const catEmoji = document.getElementById('cat-emoji');
+                    catEmoji.textContent = data.cat_detected ? '😺' : '❌';
+
+                    // Update resources
+                    updateResourceBar('food', data.food_level);
+                    updateResourceBar('water', data.water_level);
+                })
+                .catch(err => {
+                    console.error('Error fetching status:', err);
+                    document.getElementById('connection-status').textContent = '● Offline';
+                    document.getElementById('connection-status').className = 'status-pill';
+                });
+        };
+
+        window.updateResourceBar = function(type, value) {
+            const bar = document.getElementById(`${type}-level`);
+            const percent = document.getElementById(`${type}-percent`);
+            bar.style.height = `${value}%`;
+            percent.textContent = Math.round(value);
+        };
+
+        window.updateFoodLevel = async function(value) {
+            try {
+                await fetch('/api/sensors/food', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({level: parseFloat(value)})
+                });
+                updateResourceBar('food', value);
+            } catch (err) {
+                console.error('Error updating food level:', err);
+            }
+        };
+
+        window.updateWaterLevel = async function(value) {
+            try {
+                await fetch('/api/sensors/water', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({level: parseFloat(value)})
+                });
+                updateResourceBar('water', value);
+            } catch (err) {
+                console.error('Error updating water level:', err);
+            }
+        };
+
+        window.updateTemperature = async function(value) {
+            try {
+                await fetch('/api/sensors/temperature', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({temperature: parseFloat(value)})
+                });
+                document.getElementById('temperature').textContent = `${value}°C`;
+            } catch (err) {
+                console.error('Error updating temperature:', err);
+            }
+        };
+
+        window.toggleCat = async function() {
+            try {
+                const res = await fetch('/api/cat/toggle', {method: 'POST'});
+                const data = await res.json();
+                showToast(data.cat_detected ? 'Cat appeared! 😺' : 'Cat left 😿');
+            } catch (err) {
+                console.error('Error toggling cat:', err);
+            }
+        };
+
+        window.toggleDoor = async function() {
+            try {
+                const res = await fetch('/api/door/toggle', {method: 'POST'});
+                const data = await res.json();
+                showToast(data.door_open ? 'Door opened 🚪' : 'Door closed 🔒');
+            } catch (err) {
+                console.error('Error toggling door:', err);
+            }
+        };
+
+        window.feedNow = async function() {
+            try {
+                const res = await fetch('/api/feed', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({portion: parseInt(activePortion)})
+                });
+                showToast(`Fed ${activePortion}g! 🍽️`);
+            } catch (err) {
+                console.error('Error feeding:', err);
+                showToast('Feeding failed');
+            }
+        };
+
+        window.simulateMotorError = async function() {
+            try {
+                await fetch('/api/motor/error', {method: 'POST'});
+                showToast('Motor error simulated! ⚠️');
+            } catch (err) {
+                console.error('Error simulating motor error:', err);
+            }
+        };
+
+        window.resetMotor = async function() {
+            try {
+                await fetch('/api/motor/reset', {method: 'POST'});
+                showToast('Motor reset! ✅');
+            } catch (err) {
+                console.error('Error resetting motor:', err);
+            }
+        };
+
+        window.tareScale = async function() {
+            try {
+                await fetch('/api/scale/tare', {method: 'POST'});
+                showToast('Scale tared! ⚖️');
+            } catch (err) {
+                console.error('Error taring scale:', err);
+            }
+        };
+
+        // Schedule functions
+        window.renderSchedule = function() {
+            const list = document.getElementById('schedule-list');
+            list.innerHTML = currentSchedule.map((item, idx) => `
+                <div class="schedule-item" onclick="editFeeding(${idx})">
+                    <div>
+                        <div style="font-weight: 700; font-size: 18px;">${item.time}</div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">${item.portion}g • Everyday</div>
+                    </div>
+                    <label class="switch" onclick="event.stopPropagation()">
+                        <input type="checkbox" ${item.enabled ? 'checked' : ''}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            `).join('');
+        };
+
+        window.editFeeding = function(idx) {
+            document.getElementById('scheduleModalTitle').innerText = 'Edit Feeding';
+            document.getElementById('feedTime').value = currentSchedule[idx].time;
+            document.getElementById('feedAmount').value = currentSchedule[idx].portion;
+            openModal('scheduleModal');
+        };
+
+        window.saveFeeding = async function() {
+            const time = document.getElementById('feedTime').value;
+            const portion = document.getElementById('feedAmount').value;
+
+            currentSchedule.push({
+                time: time,
+                portion: parseInt(portion),
+                enabled: true
+            });
+
+            // Save to backend
+            const times = currentSchedule.map(s => s.time);
+            try {
+                await fetch('/api/schedule', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({times: times})
+                });
+                renderSchedule();
+                closeModal('scheduleModal');
+                showToast('Schedule saved! 📅');
+            } catch (err) {
+                console.error('Error saving schedule:', err);
+                showToast('Failed to save schedule');
+            }
+        };
+
+        // Initialize schedule
+        currentSchedule = [
+            {time: '07:00', portion: 20, enabled: true},
+            {time: '12:30', portion: 10, enabled: false},
+            {time: '18:00', portion: 40, enabled: true}
+        ];
+        renderSchedule();
+
+        // Auto-update status every 2 seconds
+        updateStatus();
+        setInterval(updateStatus, 2000);
+    </script>
+</body>
+</html>

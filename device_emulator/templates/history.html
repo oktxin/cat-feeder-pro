@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CatFeed Pro - History</title>
+    <style>
+        :root {
+            --bg-app: #F5F5F7;
+            --bg-card: #FFFFFF;
+            --text-primary: #000000;
+            --text-secondary: #6E6E73;
+            --text-tertiary: #A1A1A6;
+            --accent-purple: #C4B0EA;
+            --accent-purple-light: #F2ECFB;
+            --radius-l: 32px;
+            --radius-m: 24px;
+            --radius-s: 12px;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --gap: 24px;
+            --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            outline: none;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-app);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: var(--gap);
+            padding: var(--gap);
+            height: 100vh;
+            max-width: 1440px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 12px;
+            height: 40px;
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .brand-dot {
+            width: 12px;
+            height: 12px;
+            background: var(--text-primary);
+            border-radius: 50%;
+        }
+
+        .nav-back {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-m);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .stat-item {
+            background: var(--bg-app);
+            padding: 20px;
+            border-radius: var(--radius-s);
+        }
+
+        .label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 4px;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .value-large {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .value-unit {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-left: 4px;
+        }
+
+        .chart-container {
+            height: 180px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            padding-top: 20px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: var(--accent-purple);
+            border-radius: 4px 4px 0 0;
+            min-height: 10%;
+            transition: height 0.6s ease;
+            position: relative;
+        }
+
+        .chart-bar:hover {
+            opacity: 0.8;
+        }
+
+        .history-main {
+            display: flex;
+            flex-direction: column;
+            gap: var(--gap);
+            overflow: hidden;
+        }
+
+        .history-table-card {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .history-list {
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .history-row {
+            display: grid;
+            grid-template-columns: 100px 140px 100px 1fr 120px;
+            padding: 18px 0;
+            border-bottom: 1px solid var(--bg-app);
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .history-row:last-child {
+            border-bottom: none;
+        }
+
+        .header-row {
+            font-weight: 600;
+            color: var(--text-tertiary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--bg-app);
+        }
+
+        .type-badge {
+            display: inline-flex;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            width: fit-content;
+        }
+
+        .type-manual {
+            background: #E5E5EA;
+            color: var(--text-secondary);
+        }
+
+        .type-scheduled {
+            background: var(--accent-purple-light);
+            color: #7A5DC7;
+        }
+
+        .consumption-bar-container {
+            width: 100px;
+            height: 6px;
+            background: var(--bg-app);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .consumption-fill {
+            height: 100%;
+            background: #4CD964;
+        }
+
+        .time-cell {
+            font-weight: 500;
+        }
+
+        .date-divider {
+            padding: 24px 0 12px 0;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 5;
+        }
+
+        .btn-export {
+            border: none;
+            background: var(--bg-app);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E5E5EA;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <a href="/" class="brand">
+                <div class="brand-dot"></div>
+                CatFeed Pro
+            </a>
+            <a href="/" class="nav-back">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Back to Dashboard
+            </a>
+        </header>
+
+        <div class="col-left">
+            <div class="card">
+                <div class="card-title">Consumption Insights</div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="label">Total Distributed (7d)</span>
+                        <div class="value-large" id="total-distributed">420<span class="value-unit">g</span></div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Avg. Daily Intake</span>
+                        <div class="value-large" id="avg-daily">60<span class="value-unit">g</span></div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px;">
+                    <span class="label">Daily Food Usage</span>
+                    <div class="chart-container">
+                        <div class="chart-bar" style="height: 60%;"></div>
+                        <div class="chart-bar" style="height: 85%;"></div>
+                        <div class="chart-bar" style="height: 45%;"></div>
+                        <div class="chart-bar" style="height: 70%;"></div>
+                        <div class="chart-bar" style="height: 95%;"></div>
+                        <div class="chart-bar" style="height: 55%;"></div>
+                        <div class="chart-bar" style="height: 80%;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 10px; color: var(--text-tertiary); font-weight: 600;">
+                        <span>MON</span>
+                        <span>TUE</span>
+                        <span>WED</span>
+                        <span>THU</span>
+                        <span>FRI</span>
+                        <span>SAT</span>
+                        <span>SUN</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 24px;">
+                <div class="card-title">Success Rate</div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <svg width="40" height="40" viewBox="0 0 40 40">
+                        <circle cx="20" cy="20" r="18" fill="none" stroke="#F5F5F7" stroke-width="4"></circle>
+                        <circle cx="20" cy="20" r="18" fill="none" stroke="#4CD964" stroke-width="4" stroke-dasharray="100 113" stroke-linecap="round"></circle>
+                    </svg>
+                    <div>
+                        <div style="font-weight: 700; font-size: 18px;">98.2%</div>
+                        <div class="label" style="margin: 0;">Successful dispenses</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="history-main">
+            <div class="card history-table-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span class="card-title" style="margin-bottom: 0;">Feeding History Log</span>
+                    <button class="btn-export" onclick="exportHistory()">Export CSV</button>
+                </div>
+
+                <div class="history-row header-row">
+                    <span>Time</span>
+                    <span>Method</span>
+                    <span>Portion</span>
+                    <span>Consumption Status</span>
+                    <span>Bowl Weight</span>
+                </div>
+
+                <div class="history-list" id="history-list">
+                    <div class="date-divider">TODAY — Загрузка...</div>
+
+                    <div class="history-row">
+                        <span class="time-cell">06:00 PM</span>
+                        <span><span class="type-badge type-scheduled">SCHEDULED</span></span>
+                        <span style="font-weight: 600;">40g</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div class="consumption-bar-container"><div class="consumption-fill" style="width: 100%;"></div></div>
+                            <span style="font-size: 12px; color: var(--text-secondary);">Finished</span>
+                        </div>
+                        <span style="color: var(--text-tertiary);">0g</span>
+                    </div>
+
+                    <div class="history-row">
+                        <span class="time-cell">02:15 PM</span>
+                        <span><span class="type-badge type-manual">MANUAL</span></span>
+                        <span style="font-weight: 600;">10g</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div class="consumption-bar-container"><div class="consumption-fill" style="width: 40%;"></div></div>
+                            <span style="font-size: 12px; color: var(--text-secondary);">Partial</span>
+                        </div>
+                        <span style="color: var(--text-tertiary);">6g left</span>
+                    </div>
+
+                    <div class="history-row">
+                        <span class="time-cell">12:30 PM</span>
+                        <span><span class="type-badge type-scheduled">SCHEDULED</span></span>
+                        <span style="font-weight: 600;">10g</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div class="consumption-bar-container"><div class="consumption-fill" style="width: 100%;"></div></div>
+                            <span style="font-size: 12px; color: var(--text-secondary);">Finished</span>
+                        </div>
+                        <span style="color: var(--text-tertiary);">0g</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function exportHistory() {
+            alert('Export CSV functionality - will download feeding history');
+        }
+
+        function updateHistory() {
+            fetch('/api/status')
+                .then(res => res.json())
+                .then(data => {
+                    const now = new Date();
+                    const dateStr = now.toLocaleDateString('ru-RU', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric'
+                    }).toUpperCase();
+
+                    // Update date divider
+                    const dividers = document.querySelectorAll('.date-divider');
+                    if (dividers[0]) {
+                        dividers[0].textContent = `TODAY — ${dateStr}`;
+                    }
+
+                    // Update stats based on schedule
+                    if (data.schedule && data.schedule.length > 0) {
+                        const totalDaily = data.schedule.reduce((sum, s) => sum + s.portion, 0);
+                        document.getElementById('total-distributed').innerHTML =
+                            `${totalDaily * 7}<span class="value-unit">g</span>`;
+                        document.getElementById('avg-daily').innerHTML =
+                            `${totalDaily}<span class="value-unit">g</span>`;
+                    }
+                })
+                .catch(err => console.error('Error updating history:', err));
+        }
+
+        // Update history every 5 seconds
+        updateHistory();
+        setInterval(updateHistory, 5000);
+    </script>
+</body>
+</html>

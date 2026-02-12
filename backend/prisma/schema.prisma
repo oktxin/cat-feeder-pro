@@ -1,0 +1,83 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Device {
+  id                String      @id @default(uuid())
+  deviceId          String      @unique
+  name              String      @default("Cat Feeder")
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  telemetry         Telemetry[]
+  events            Event[]
+  schedules         Schedule[]
+  settings          Settings?
+}
+
+model Telemetry {
+  id                String    @id @default(uuid())
+  deviceId          String
+  device            Device    @relation(fields: [deviceId], references: [deviceId])
+  foodLevel         Int
+  waterLevel        Int
+  motorStatus       String
+  catDetected       Boolean
+  weightBowl        Float
+  doorOpen          Boolean
+  temperature       Float
+  wifiSignal        Int
+  batteryLevel      Int
+  totalFeedingsToday Int
+  firmwareVersion   String
+  timestamp         DateTime  @default(now())
+
+  @@index([deviceId, timestamp])
+}
+
+model Event {
+  id        String    @id @default(uuid())
+  deviceId  String
+  device    Device    @relation(fields: [deviceId], references: [deviceId])
+  type      String
+  data      String    // JSON string
+  timestamp DateTime  @default(now())
+
+  @@index([deviceId, timestamp])
+  @@index([type])
+}
+
+model Schedule {
+  id        String   @id @default(uuid())
+  deviceId  String
+  device    Device   @relation(fields: [deviceId], references: [deviceId])
+  time      String   // Format: "HH:MM"
+  portion   Int      @default(50)
+  enabled   Boolean  @default(true)
+  weekdays  String   @default("0,1,2,3,4,5,6") // Comma-separated days (0=Sunday)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([deviceId])
+}
+
+model Settings {
+  id                  String   @id @default(uuid())
+  deviceId            String   @unique
+  device              Device   @relation(fields: [deviceId], references: [deviceId])
+  petName             String   @default("Whiskers")
+  petWeight           Float?   // in kg
+  foodType            String   @default("dry")
+  caloriesPerGram     Float    @default(3.5)
+  lowFoodThreshold    Int      @default(20)
+  lowWaterThreshold   Int      @default(20)
+  theme               String   @default("light")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}

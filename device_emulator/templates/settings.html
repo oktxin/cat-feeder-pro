@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CatFeed Pro - Device Settings</title>
+    <style>
+        :root {
+            --bg-app: #F5F5F7;
+            --bg-card: #FFFFFF;
+            --text-primary: #000000;
+            --text-secondary: #6E6E73;
+            --text-tertiary: #A1A1A6;
+            --accent-purple: #C4B0EA;
+            --accent-purple-light: #F2ECFB;
+            --radius-l: 32px;
+            --radius-m: 24px;
+            --radius-s: 12px;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --gap: 24px;
+            --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            outline: none;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-app);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            grid-template-rows: auto 1fr;
+            gap: var(--gap);
+            padding: var(--gap);
+            height: 100vh;
+            max-width: 1440px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 12px;
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .brand-dot {
+            width: 12px;
+            height: 12px;
+            background: var(--text-primary);
+            border-radius: 50%;
+        }
+
+        .nav-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-item {
+            padding: 14px 20px;
+            border-radius: 16px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 15px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-item:hover {
+            background: rgba(0,0,0,0.03);
+        }
+
+        .nav-item.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--gap);
+            overflow-y: auto;
+            padding-right: 8px;
+            padding-bottom: 40px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-m);
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid #F2F2F7;
+        }
+
+        .settings-row:last-child {
+            border-bottom: none;
+        }
+
+        .setting-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .setting-label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .setting-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid #E5E5EA;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-outline:hover {
+            background: #F2F2F7;
+            border-color: #D1D1D6;
+        }
+
+        .btn-danger {
+            color: #FF3B30;
+            border-color: #FF3B30;
+        }
+
+        .btn-danger:hover {
+            background: #FFF2F2;
+        }
+
+        .input-field {
+            background: var(--bg-app);
+            border: none;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #E5E5EA;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--text-primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-pill.up-to-date {
+            background: var(--accent-purple-light);
+            color: #7A5DC7;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            background: var(--text-primary);
+            color: #fff;
+            padding: 16px 24px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+        }
+
+        .toast.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .calibration-bar {
+            height: 8px;
+            background: #E5E5EA;
+            border-radius: 4px;
+            margin-top: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .calibration-progress {
+            position: absolute;
+            height: 100%;
+            background: var(--accent-purple);
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D1D1D6;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <a href="/" class="brand">
+                <div class="brand-dot"></div>
+                CatFeed Pro
+            </a>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn-outline" onclick="showToast('Settings saved')">Save All Changes</button>
+            </div>
+        </header>
+
+        <div class="nav-sidebar">
+            <a href="/" class="nav-item"><span>🏠</span> Dashboard</a>
+            <a href="/settings" class="nav-item active"><span>⚙️</span> Device Settings</a>
+            <a href="/analytics" class="nav-item"><span>📊</span> Feeding Stats</a>
+            <a href="/history" class="nav-item"><span>🐱</span> History</a>
+        </div>
+
+        <div class="settings-grid">
+            <div class="card">
+                <div class="card-title">🌐 Network Configuration</div>
+                <div class="settings-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Connected WiFi</span>
+                        <span class="setting-desc" id="wifi-status">Loading...</span>
+                    </div>
+                    <button class="btn-outline" onclick="showToast('Scanning for networks...')">Change</button>
+                </div>
+                <div class="settings-row">
+                    <div class="setting-info" style="width: 100%;">
+                        <span class="setting-label">Static IP (Optional)</span>
+                        <input type="text" class="input-field" placeholder="192.168.1.42">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🚀 System & Updates</div>
+                <div class="settings-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Firmware Version</span>
+                        <span class="setting-desc" id="firmware-version">Current: v1.0.0</span>
+                    </div>
+                    <span class="status-pill up-to-date">Up to date</span>
+                </div>
+                <div class="settings-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Auto-Update</span>
+                        <span class="setting-desc">Install updates overnight</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <button class="btn-outline" style="margin-top: 12px;" onclick="showToast('Checking for updates...')">Check for Updates</button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">⚖️ Sensor Calibration</div>
+                <div class="settings-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Bowl Scale</span>
+                        <span class="setting-desc">Current tare: 0.0g</span>
+                    </div>
+                    <button class="btn-outline" onclick="calibrateScale()">Tare Scale</button>
+                </div>
+                <div id="scaleProg" class="calibration-bar" style="display:none;"><div class="calibration-progress" style="width:100%;"></div></div>
+
+                <div class="settings-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Temperature Offset</span>
+                        <span class="setting-desc">Adjust sensor accuracy</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="number" step="0.1" value="0.0" style="width: 60px; padding: 6px; border-radius: 8px; border: 1px solid #E5E5EA;">
+                        <span>°C</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔔 Notifications</div>
+                <div class="settings-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Low Food Alert</span>
+                        <span class="setting-desc">Notify when tank < 20%</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="settings-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Feeding Success</span>
+                        <span class="setting-desc">Confirmation after dispense</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔊 Audio & Sounds</div>
+                <div class="settings-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Dispense Chime</span>
+                        <span class="setting-desc">Sound when feeding starts</span>
+                    </div>
+                    <select class="btn-outline">
+                        <option>Soft Bell</option>
+                        <option>Whistle</option>
+                        <option>Custom Record</option>
+                    </select>
+                </div>
+                <div class="settings-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Speaker Volume</span>
+                        <span class="setting-desc">Device alert loudness</span>
+                    </div>
+                    <input type="range" style="width: 100px;">
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🛠️ Hardware Diagnostics</div>
+                <div class="settings-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Motor Test</span>
+                        <span class="setting-desc">Rotate auger 360°</span>
+                    </div>
+                    <button class="btn-outline" onclick="showToast('Testing motor... auger rotating')">Run Test</button>
+                </div>
+                <div class="settings-row">
+                    <div class="setting-info">
+                        <span class="setting-label">IR Sensor Check</span>
+                        <span class="setting-desc">Verify food path clear</span>
+                    </div>
+                    <button class="btn-outline" onclick="showToast('IR Path: Clear')">Check</button>
+                </div>
+                <div class="settings-row">
+                    <div class="setting-info">
+                        <span class="setting-label" style="color:#FF3B30">Factory Reset</span>
+                        <span class="setting-desc">Wipe all data and settings</span>
+                    </div>
+                    <button class="btn-outline btn-danger" onclick="if(confirm('Are you sure?')) showToast('Resetting device...')">Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <div style="width: 20px; height: 20px; background: #4CD964; border-radius: 50%; display: flex; align-items:center; justify-content:center;">✓</div>
+        <span id="toastMsg">Settings saved successfully</span>
+    </div>
+
+    <script>
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.add('visible');
+            setTimeout(() => {
+                toast.classList.remove('visible');
+            }, 3000);
+        }
+
+        function calibrateScale() {
+            fetch('/api/tare', { method: 'POST' })
+                .then(res => res.json())
+                .then(() => {
+                    const bar = document.getElementById('scaleProg');
+                    bar.style.display = 'block';
+                    const progress = bar.querySelector('.calibration-progress');
+                    progress.style.width = '0%';
+
+                    setTimeout(() => { progress.style.width = '100%'; }, 50);
+
+                    setTimeout(() => {
+                        showToast("Calibration complete");
+                        bar.style.display = 'none';
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Error calibrating scale:', err);
+                    showToast('Calibration failed');
+                });
+        }
+
+        function updateSettings() {
+            fetch('/api/status')
+                .then(res => res.json())
+                .then(data => {
+                    // Update WiFi status
+                    const wifiStrength = data.state?.wifi_strength || 0;
+                    let wifiText = 'Disconnected';
+                    if (wifiStrength > 75) wifiText = 'Excellent';
+                    else if (wifiStrength > 50) wifiText = 'Good';
+                    else if (wifiStrength > 25) wifiText = 'Fair';
+                    else if (wifiStrength > 0) wifiText = 'Weak';
+
+                    document.getElementById('wifi-status').textContent =
+                        `Home Network (${wifiText})`;
+
+                    // Update firmware version
+                    document.getElementById('firmware-version').textContent =
+                        `Current: ${data.firmware_version || 'v1.0.0'}`;
+                })
+                .catch(err => console.error('Error updating settings:', err));
+        }
+
+        // Update settings every 5 seconds
+        updateSettings();
+        setInterval(updateSettings, 5000);
+    </script>
+</body>
+</html>
