@@ -211,10 +211,4 @@ web_thread = threading.Thread(
 
 MIT License
 
-## 🤝 Автор
-
-Создано с помощью Claude Code
-
----
-
 **Приятного использования CatFeed Pro!** 🐱✨
