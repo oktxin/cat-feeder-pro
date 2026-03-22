@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "simulator",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["main.py"],
+      "port": 5000,
+      "cwd": "device_emulator"
+    },
+    {
+      "name": "webapp",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-c", "import os; os.environ['TELEGRAM_BOT_TOKEN']='x'; os.environ['BACKEND_URL']='http://localhost:5000'; os.environ['DEVICE_ID']='feeder_001'; from webapp_server import start_webapp_server; s=start_webapp_server(); import time; time.sleep(999999)"],
+      "port": 8080,
+      "cwd": "telegram_bot"
+    }
+  ]
+}

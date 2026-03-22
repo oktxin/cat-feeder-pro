@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CatFeed Pro — Пульт</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poiret+One&family=Josefin+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #C9A84C; --gold-light: #E8D48B; --gold-dark: #8B6914;
+            --black: #0A0A0F; --charcoal: #1A1A24; --slate: #2A2A38;
+            --cream: #FAF3E0; --cream-dim: #D4C9A8;
+            --teal: #3DE8C7; --ruby: #FF4136; --sapphire: #5DADE2;
+            --emerald: #2ECC71;
+            --font-display: 'Poiret One', cursive;
+            --font-ui: 'Josefin Sans', sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-ui);
+            background: var(--black);
+            color: var(--cream);
+            min-height: 100vh;
+            padding: 0 0 80px 0;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background:
+                repeating-linear-gradient(0deg, transparent, transparent 50px, rgba(201,168,76,0.02) 50px, rgba(201,168,76,0.02) 51px),
+                repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(201,168,76,0.02) 50px, rgba(201,168,76,0.02) 51px);
+            pointer-events: none; z-index: 0;
+        }
+
+        /* ── Header ── */
+        .app-header {
+            position: sticky; top: 0; z-index: 100;
+            background: linear-gradient(180deg, var(--black) 0%, rgba(10,10,15,0.95) 100%);
+            backdrop-filter: blur(20px);
+            padding: 16px 20px 12px;
+            border-bottom: 1px solid rgba(201,168,76,0.15);
+            text-align: center;
+        }
+        .app-title {
+            font-family: var(--font-display);
+            font-size: 22px; letter-spacing: 0.3em;
+            text-transform: uppercase; color: var(--gold);
+        }
+        .app-subtitle {
+            font-size: 10px; letter-spacing: 0.15em;
+            text-transform: uppercase; color: var(--cream-dim);
+            margin-top: 2px;
+        }
+        .status-line {
+            display: flex; justify-content: center; align-items: center;
+            gap: 8px; margin-top: 8px;
+        }
+        .status-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--emerald);
+            animation: pulse 2s infinite;
+        }
+        .status-dot.offline { background: var(--ruby); animation: none; }
+        @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(46,204,113,0.4)} 50%{box-shadow:0 0 0 5px rgba(46,204,113,0)} }
+        .status-text {
+            font-size: 9px; letter-spacing: 0.12em;
+            text-transform: uppercase; color: var(--emerald);
+        }
+        .status-text.offline { color: var(--ruby); }
+
+        /* ── Content ── */
+        .content { position: relative; z-index: 1; padding: 16px; }
+
+        /* ── Gauges row ── */
+        .gauges {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 12px; margin-bottom: 16px;
+        }
+        .gauge-card {
+            background: rgba(201,168,76,0.04);
+            border: 1px solid rgba(201,168,76,0.12);
+            border-radius: 16px; padding: 16px; text-align: center;
+            position: relative; overflow: hidden;
+        }
+        .gauge-card .fill {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            border-radius: 0 0 15px 15px;
+            transition: height 1s ease;
+        }
+        .gauge-food .fill { background: linear-gradient(180deg, rgba(201,168,76,0.2), rgba(201,168,76,0.05)); }
+        .gauge-water .fill { background: linear-gradient(180deg, rgba(93,173,226,0.2), rgba(93,173,226,0.05)); }
+        .gauge-label {
+            font-size: 9px; letter-spacing: 0.2em;
+            text-transform: uppercase; color: var(--gold);
+            position: relative; z-index: 2;
+        }
+        .gauge-value {
+            font-family: var(--font-display);
+            font-size: 42px; color: var(--cream);
+            position: relative; z-index: 2;
+            line-height: 1.1;
+        }
+        .gauge-value small { font-family: var(--font-ui); font-size: 16px; color: var(--cream-dim); }
+        .gauge-bar {
+            width: 100%; height: 4px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 2px; margin-top: 8px;
+            overflow: hidden; position: relative; z-index: 2;
+        }
+        .gauge-bar-fill {
+            height: 100%; border-radius: 2px;
+            transition: width 1s ease;
+        }
+        .gauge-food .gauge-bar-fill { background: var(--gold); }
+        .gauge-water .gauge-bar-fill { background: var(--sapphire); }
+        .gauge-low .gauge-bar-fill { background: var(--ruby) !important; }
+        .gauge-low .gauge-label { color: var(--ruby); }
+
+        /* ── Feed button ── */
+        .feed-section { margin-bottom: 16px; }
+        .feed-btn {
+            width: 100%; padding: 18px;
+            background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 100%);
+            border: none; border-radius: 14px;
+            font-family: var(--font-display);
+            font-size: 20px; letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--black); cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .feed-btn:active { transform: scale(0.97); }
+        .feed-btn:disabled {
+            opacity: 0.5; cursor: not-allowed;
+        }
+        .feed-btn.feeding {
+            background: linear-gradient(135deg, #27AE60, #2ECC71);
+            animation: feed-pulse 0.8s ease infinite;
+        }
+        @keyframes feed-pulse { 0%,100%{opacity:1} 50%{opacity:0.8} }
+
+        .portion-selector {
+            display: flex; gap: 8px; margin-top: 10px; justify-content: center;
+        }
+        .portion-chip {
+            padding: 8px 16px;
+            background: rgba(201,168,76,0.06);
+            border: 1px solid rgba(201,168,76,0.15);
+            border-radius: 20px;
+            font-family: var(--font-ui); font-size: 13px;
+            color: var(--cream-dim); cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .portion-chip.active {
+            background: rgba(201,168,76,0.15);
+            border-color: var(--gold); color: var(--gold);
+        }
+
+        /* ── Telemetry grid ── */
+        .telem-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 8px; margin-bottom: 16px;
+        }
+        .telem-item {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(201,168,76,0.08);
+            border-radius: 12px; padding: 12px 8px;
+            text-align: center;
+        }
+        .telem-icon { font-size: 20px; }
+        .telem-val {
+            font-family: var(--font-display);
+            font-size: 18px; color: var(--cream);
+            margin: 2px 0;
+        }
+        .telem-lbl {
+            font-size: 8px; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--cream-dim);
+        }
+
+        /* ── Cat indicator ── */
+        .cat-banner {
+            display: none;
+            background: rgba(201,168,76,0.08);
+            border: 1px solid rgba(201,168,76,0.2);
+            border-radius: 14px; padding: 14px 20px;
+            margin-bottom: 16px;
+            align-items: center; gap: 12px;
+            animation: cat-in 0.5s ease;
+        }
+        .cat-banner.visible { display: flex; }
+        @keyframes cat-in { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+        .cat-emoji { font-size: 32px; }
+        .cat-text { font-size: 13px; color: var(--gold); }
+        .cat-text small { display: block; font-size: 10px; color: var(--cream-dim); }
+
+        /* ── Sections ── */
+        .section {
+            background: rgba(201,168,76,0.03);
+            border: 1px solid rgba(201,168,76,0.08);
+            border-radius: 16px; padding: 16px;
+            margin-bottom: 12px;
+        }
+        .section-title {
+            font-size: 10px; letter-spacing: 0.2em;
+            text-transform: uppercase; color: var(--gold);
+            margin-bottom: 12px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .section-title::before {
+            content: ''; width: 10px; height: 1px; background: var(--gold);
+        }
+
+        /* ── Schedule ── */
+        .sched-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .sched-item {
+            font-family: var(--font-display);
+            font-size: 20px; color: var(--gold);
+            background: rgba(201,168,76,0.08);
+            border: 1px solid rgba(201,168,76,0.15);
+            padding: 8px 16px; border-radius: 10px;
+        }
+        .sched-next {
+            font-size: 11px; color: var(--cream-dim);
+            margin-top: 8px;
+        }
+
+        /* ── Motor status ── */
+        .motor-bar {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.2); border-radius: 10px;
+        }
+        .motor-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--cream-dim);
+        }
+        .motor-dot.idle { background: var(--cream-dim); }
+        .motor-dot.running { background: var(--emerald); box-shadow: 0 0 8px var(--emerald); animation: pulse 1s infinite; }
+        .motor-dot.error { background: var(--ruby); box-shadow: 0 0 8px var(--ruby); animation: blink 0.6s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        .motor-label { font-size: 12px; color: var(--cream-dim); }
+
+        /* ── Events ── */
+        .event-list { max-height: 200px; overflow-y: auto; }
+        .event-row {
+            display: flex; align-items: flex-start; gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(201,168,76,0.04);
+            font-size: 13px; color: var(--cream-dim);
+        }
+        .event-row:last-child { border-bottom: none; }
+        .event-ts { font-size: 9px; color: var(--gold-dark); letter-spacing: 0.05em; }
+
+        /* ── Bottom nav ── */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(0deg, var(--black) 60%, transparent);
+            padding: 12px 16px 20px;
+            display: flex; justify-content: space-around;
+            z-index: 100;
+        }
+        .nav-btn {
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+            background: none; border: none; cursor: pointer;
+            color: var(--cream-dim); transition: color 0.3s;
+            padding: 6px 12px;
+        }
+        .nav-btn.active { color: var(--gold); }
+        .nav-btn .nav-icon { font-size: 22px; }
+        .nav-btn .nav-label { font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; }
+
+        /* ── Pages ── */
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* ── Settings page ── */
+        .setting-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(201,168,76,0.06);
+        }
+        .setting-row:last-child { border-bottom: none; }
+        .setting-label { font-size: 13px; color: var(--cream-dim); }
+        .setting-value { font-size: 13px; color: var(--gold); font-weight: 600; }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
+            background: var(--charcoal); border: 1px solid rgba(201,168,76,0.3);
+            color: var(--cream); font-size: 13px; letter-spacing: 0.05em;
+            padding: 12px 24px; border-radius: 10px;
+            z-index: 9999; opacity: 0; pointer-events: none;
+            transition: all 0.4s ease;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* ── Loading ── */
+        .loading {
+            display: flex; justify-content: center; padding: 40px;
+        }
+        .spinner {
+            width: 24px; height: 24px; border: 2px solid rgba(201,168,76,0.2);
+            border-top-color: var(--gold); border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="app-header">
+    <div class="app-title">CatFeed Pro</div>
+    <div class="app-subtitle">Пульт управления</div>
+    <div class="status-line">
+        <div class="status-dot" id="status-dot"></div>
+        <div class="status-text" id="status-text">Подключение...</div>
+    </div>
+</div>
+
+<!-- ══ PAGE: MAIN ══ -->
+<div class="content">
+<div class="page active" id="page-main">
+
+    <!-- Cat banner -->
+    <div class="cat-banner" id="cat-banner">
+        <span class="cat-emoji">🐱</span>
+        <div class="cat-text">
+            Кот у кормушки!
+            <small>Миска: <span id="cat-bowl">0</span>г</small>
+        </div>
+    </div>
+
+    <!-- Gauges -->
+    <div class="gauges">
+        <div class="gauge-card gauge-food" id="gauge-food">
+            <div class="fill" id="food-fill"></div>
+            <div class="gauge-label">Корм</div>
+            <div class="gauge-value"><span id="v-food">—</span><small>%</small></div>
+            <div class="gauge-bar"><div class="gauge-bar-fill" id="food-bar"></div></div>
+        </div>
+        <div class="gauge-card gauge-water" id="gauge-water">
+            <div class="fill" id="water-fill"></div>
+            <div class="gauge-label">Вода</div>
+            <div class="gauge-value"><span id="v-water">—</span><small>%</small></div>
+            <div class="gauge-bar"><div class="gauge-bar-fill" id="water-bar"></div></div>
+        </div>
+    </div>
+
+    <!-- Feed -->
+    <div class="feed-section">
+        <button class="feed-btn" id="feed-btn" onclick="doFeed()">
+            ◆ Покормить
+        </button>
+        <div class="portion-selector" id="portions">
+            <div class="portion-chip" data-g="20" onclick="selectPortion(20)">20г</div>
+            <div class="portion-chip" data-g="30" onclick="selectPortion(30)">30г</div>
+            <div class="portion-chip active" data-g="50" onclick="selectPortion(50)">50г</div>
+            <div class="portion-chip" data-g="70" onclick="selectPortion(70)">70г</div>
+            <div class="portion-chip" data-g="100" onclick="selectPortion(100)">100г</div>
+        </div>
+    </div>
+
+    <!-- Telemetry -->
+    <div class="telem-grid">
+        <div class="telem-item">
+            <div class="telem-icon">🌡</div>
+            <div class="telem-val" id="v-temp">—</div>
+            <div class="telem-lbl">Темп</div>
+        </div>
+        <div class="telem-item">
+            <div class="telem-icon">🔋</div>
+            <div class="telem-val" id="v-bat">—</div>
+            <div class="telem-lbl">Батарея</div>
+        </div>
+        <div class="telem-item">
+            <div class="telem-icon">📶</div>
+            <div class="telem-val" id="v-wifi">—</div>
+            <div class="telem-lbl">WiFi</div>
+        </div>
+        <div class="telem-item">
+            <div class="telem-icon">🍽</div>
+            <div class="telem-val" id="v-feeds">0</div>
+            <div class="telem-lbl">Сегодня</div>
+        </div>
+    </div>
+
+    <!-- Motor -->
+    <div class="section">
+        <div class="section-title">Устройство</div>
+        <div class="motor-bar">
+            <div class="motor-dot" id="motor-dot"></div>
+            <div class="motor-label" id="motor-label">Мотор: —</div>
+        </div>
+    </div>
+
+    <!-- Schedule -->
+    <div class="section">
+        <div class="section-title">Расписание</div>
+        <div class="sched-list" id="sched-list"></div>
+        <div class="sched-next" id="sched-next">Следующее: —</div>
+    </div>
+</div>
+
+<!-- ══ PAGE: EVENTS ══ -->
+<div class="page" id="page-events">
+    <div class="section">
+        <div class="section-title">Последние события</div>
+        <div class="event-list" id="event-list">
+            <div class="loading"><div class="spinner"></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ PAGE: SETTINGS ══ -->
+<div class="page" id="page-settings">
+    <div class="section">
+        <div class="section-title">Информация</div>
+        <div class="setting-row"><span class="setting-label">Устройство</span><span class="setting-value" id="s-device">—</span></div>
+        <div class="setting-row"><span class="setting-label">Прошивка</span><span class="setting-value" id="s-fw">—</span></div>
+        <div class="setting-row"><span class="setting-label">Дверца</span><span class="setting-value" id="s-door">—</span></div>
+        <div class="setting-row"><span class="setting-label">Вес миски</span><span class="setting-value" id="s-bowl">—</span></div>
+    </div>
+    <div class="section">
+        <div class="section-title">Настройки</div>
+        <div id="settings-content">
+            <div class="loading"><div class="spinner"></div></div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Bottom nav -->
+<div class="bottom-nav">
+    <button class="nav-btn active" onclick="switchPage('main')" id="nav-main">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Главная</span>
+    </button>
+    <button class="nav-btn" onclick="switchPage('events')" id="nav-events">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">События</span>
+    </button>
+    <button class="nav-btn" onclick="switchPage('settings')" id="nav-settings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Настройки</span>
+    </button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// Telegram WebApp SDK
+// ══════════════════════════════════════════════
+const tg = window.Telegram?.WebApp;
+if (tg) {
+    tg.ready();
+    tg.expand();
+    tg.setHeaderColor('#0A0A0F');
+    tg.setBackgroundColor('#0A0A0F');
+}
+
+// ══════════════════════════════════════════════
+// Config — backend URL injected by server or default
+// ══════════════════════════════════════════════
+const API_BASE = window.__API_BASE__ || 'http://localhost:3001';
+const DEVICE_ID = window.__DEVICE_ID__ || 'feeder_001';
+const DEVICE_API = `${API_BASE}/api/devices/${DEVICE_ID}`;
+
+let state = {};
+let selectedPortion = 50;
+let feeding = false;
+
+// ══════════════════════════════════════════════
+// API
+// ══════════════════════════════════════════════
+async function api(path, method = 'GET', body = null) {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    try {
+        const r = await fetch(`${DEVICE_API}${path}`, opts);
+        return await r.json();
+    } catch(e) {
+        // Fallback: try device emulator directly
+        try {
+            const r2 = await fetch(`http://localhost:5000/api${path.replace('/status','/status').replace('/feed','/feed')}`, opts);
+            return await r2.json();
+        } catch(e2) {
+            return null;
+        }
+    }
+}
+
+// ══════════════════════════════════════════════
+// STATUS POLLING
+// ══════════════════════════════════════════════
+async function fetchStatus() {
+    let s = await api('/status');
+    if (!s) {
+        // Try direct device API
+        try {
+            const r = await fetch('http://localhost:5000/api/status');
+            s = await r.json();
+        } catch(e) { s = null; }
+    }
+
+    const dot = document.getElementById('status-dot');
+    const txt = document.getElementById('status-text');
+
+    if (!s || s.error) {
+        dot.className = 'status-dot offline';
+        txt.className = 'status-text offline';
+        txt.textContent = 'Нет связи';
+        return;
+    }
+
+    dot.className = 'status-dot';
+    txt.className = 'status-text';
+    txt.textContent = 'Онлайн';
+    state = s;
+    updateUI(s);
+}
+
+function updateUI(s) {
+    const food = s.foodLevel ?? s.food_level ?? 0;
+    const water = s.waterLevel ?? s.water_level ?? 0;
+    const temp = s.temperature ?? 0;
+    const bat = s.batteryLevel ?? s.battery_level ?? 0;
+    const wifi = s.wifiSignal ?? s.wifi_signal ?? 0;
+    const motor = s.motorStatus ?? s.motor_status ?? 'idle';
+    const cat = s.catDetected ?? s.cat_detected ?? false;
+    const bowl = s.weightBowl ?? s.weight_bowl ?? 0;
+    const feeds = s.totalFeedingsToday ?? s.total_feedings_today ?? 0;
+    const door = s.doorOpen ?? s.door_open ?? false;
+
+    // Food
+    document.getElementById('v-food').textContent = food.toFixed(0);
+    document.getElementById('food-fill').style.height = food + '%';
+    document.getElementById('food-bar').style.width = food + '%';
+    document.getElementById('gauge-food').classList.toggle('gauge-low', food < 20);
+
+    // Water
+    document.getElementById('v-water').textContent = water.toFixed(0);
+    document.getElementById('water-fill').style.height = water + '%';
+    document.getElementById('water-bar').style.width = water + '%';
+    document.getElementById('gauge-water').classList.toggle('gauge-low', water < 20);
+
+    // Telemetry
+    document.getElementById('v-temp').textContent = temp.toFixed(1) + '°';
+    document.getElementById('v-bat').textContent = bat.toFixed(0) + '%';
+    document.getElementById('v-wifi').textContent = wifi.toFixed(0);
+    document.getElementById('v-feeds').textContent = feeds;
+
+    // Motor
+    const md = document.getElementById('motor-dot');
+    const ml = document.getElementById('motor-label');
+    md.className = 'motor-dot ' + motor;
+    const motorLabels = { idle: 'Мотор: простой', running: 'Мотор: работает', error: 'Мотор: ОШИБКА' };
+    ml.textContent = motorLabels[motor] || 'Мотор: ' + motor;
+
+    // Cat
+    const cb = document.getElementById('cat-banner');
+    cb.classList.toggle('visible', cat);
+    document.getElementById('cat-bowl').textContent = bowl.toFixed(1);
+
+    // Next feeding
+    if (s.next_feeding_time || s.nextFeedingTime) {
+        const nf = new Date(s.next_feeding_time || s.nextFeedingTime);
+        const diff = Math.max(0, nf - new Date());
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        document.getElementById('sched-next').textContent = `Следующее: через ${h}ч ${m}мин`;
+    }
+
+    // Schedule
+    const schedEl = document.getElementById('sched-list');
+    const times = ['08:00', '14:00', '20:00'];
+    schedEl.innerHTML = times.map(t => `<div class="sched-item">${t}</div>`).join('');
+
+    // Settings page
+    document.getElementById('s-device').textContent = (s.device_id || s.deviceId || 'feeder_001').toUpperCase();
+    document.getElementById('s-fw').textContent = s.firmware_version || s.firmwareVersion || 'v1.0.0';
+    document.getElementById('s-door').textContent = door ? '🔓 Открыта' : '🔒 Закрыта';
+    document.getElementById('s-bowl').textContent = bowl.toFixed(1) + 'г';
+}
+
+// ══════════════════════════════════════════════
+// FEED
+// ══════════════════════════════════════════════
+function selectPortion(g) {
+    selectedPortion = g;
+    document.querySelectorAll('.portion-chip').forEach(el => {
+        el.classList.toggle('active', parseInt(el.dataset.g) === g);
+    });
+}
+
+async function doFeed() {
+    if (feeding) return;
+    feeding = true;
+    const btn = document.getElementById('feed-btn');
+    btn.classList.add('feeding');
+    btn.textContent = '⚙️ Кормление...';
+    btn.disabled = true;
+
+    // Haptic feedback
+    if (tg) tg.HapticFeedback?.impactOccurred('medium');
+
+    // Try backend first, then device directly
+    let result = await api('/feed', 'POST', { portion: selectedPortion });
+    if (!result) {
+        try {
+            const r = await fetch('http://localhost:5000/api/feed', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ portion: selectedPortion })
+            });
+            result = await r.json();
+        } catch(e) {}
+    }
+
+    setTimeout(() => {
+        feeding = false;
+        btn.classList.remove('feeding');
+        btn.textContent = '◆ Покормить';
+        btn.disabled = false;
+        if (result && result.success !== false) {
+            showToast(`✅ Подано ${selectedPortion}г корма`);
+            if (tg) tg.HapticFeedback?.notificationOccurred('success');
+        } else {
+            showToast('❌ Ошибка кормления');
+            if (tg) tg.HapticFeedback?.notificationOccurred('error');
+        }
+    }, 3000);
+}
+
+// ══════════════════════════════════════════════
+// EVENTS
+// ══════════════════════════════════════════════
+async function loadEvents() {
+    const el = document.getElementById('event-list');
+    el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+    let events = await api('/events?limit=20');
+    if (!events || !Array.isArray(events)) {
+        el.innerHTML = '<div style="text-align:center;color:var(--cream-dim);padding:20px;">Нет событий</div>';
+        return;
+    }
+
+    const icons = {
+        feeding_complete: '✅', cat_detected: '🐱', cat_left: '👋',
+        low_food_warning: '⚠️', low_water_warning: '💧', error: '❌'
+    };
+
+    el.innerHTML = events.slice(0, 20).map(e => {
+        const icon = icons[e.type] || '📌';
+        const ts = e.timestamp || e.createdAt || '';
+        let time = '';
+        try {
+            const d = new Date(ts.replace('Z', '+00:00'));
+            time = d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        } catch(ex) { time = ts.slice(0,16); }
+        return `<div class="event-row"><span>${icon}</span><div><div>${(e.type||'').replace(/_/g,' ')}</div><div class="event-ts">${time}</div></div></div>`;
+    }).join('');
+}
+
+// ══════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════
+async function loadSettings() {
+    let s = await api('/settings');
+    const el = document.getElementById('settings-content');
+    if (!s) {
+        el.innerHTML = '<div style="color:var(--cream-dim)">Не удалось загрузить</div>';
+        return;
+    }
+    const pet = s.petName ?? s.pet_name ?? '—';
+    const food = s.foodType ?? s.food_type ?? '—';
+    const weight = s.petWeight ?? s.pet_weight ?? '—';
+    const ft = s.lowFoodThreshold ?? s.low_food_threshold ?? 20;
+    const wt = s.lowWaterThreshold ?? s.low_water_threshold ?? 20;
+
+    el.innerHTML = `
+        <div class="setting-row"><span class="setting-label">🐱 Питомец</span><span class="setting-value">${pet}</span></div>
+        <div class="setting-row"><span class="setting-label">🍖 Тип корма</span><span class="setting-value">${food}</span></div>
+        <div class="setting-row"><span class="setting-label">⚖ Вес питомца</span><span class="setting-value">${weight} кг</span></div>
+        <div class="setting-row"><span class="setting-label">🔔 Порог корма</span><span class="setting-value">${ft}%</span></div>
+        <div class="setting-row"><span class="setting-label">💧 Порог воды</span><span class="setting-value">${wt}%</span></div>
+    `;
+}
+
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+function switchPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    document.getElementById('nav-' + name).classList.add('active');
+
+    if (name === 'events') loadEvents();
+    if (name === 'settings') loadSettings();
+
+    if (tg) tg.HapticFeedback?.selectionChanged();
+}
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+fetchStatus();
+setInterval(fetchStatus, 3000);
+</script>
+</body>
+</html>
