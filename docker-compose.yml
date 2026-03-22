@@ -63,6 +63,19 @@ services:
     networks:
       - feeder-network
 
+  telegram_bot:
+    build: ./telegram_bot
+    container_name: cat-feeder-telegram
+    depends_on:
+      - backend
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      BACKEND_URL: http://backend:3001
+      DEVICE_ID: feeder_001
+    restart: unless-stopped
+    networks:
+      - feeder-network
+
 networks:
   feeder-network:
     driver: bridge

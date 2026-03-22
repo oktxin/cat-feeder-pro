@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CatFeed Pro — Эмулятор · Схема электроники</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poiret+One&family=Cormorant+Garamond:wght@300;400;600&family=Josefin+Sans:wght@300;400;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #C9A84C; --gold-light: #E8D48B; --gold-dark: #8B6914;
+            --black: #0A0A0F; --charcoal: #1A1A24; --slate: #2A2A38;
+            --cream: #FAF3E0; --cream-dim: #D4C9A8;
+            --teal: #3DE8C7; --ruby: #FF4136; --sapphire: #5DADE2;
+            --emerald: #2ECC71; --violet: #9B59B6;
+            --font-display: 'Poiret One', cursive;
+            --font-heading: 'Josefin Sans', sans-serif;
+            --font-body: 'Cormorant Garamond', serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-body);
+            background: var(--black);
+            color: var(--cream);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        body::after {
+            content: '';
+            position: fixed; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, transparent, var(--gold) 15%, var(--gold-light) 50%, var(--gold) 85%, transparent);
+            z-index: 1000;
+        }
+
+        /* Header */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 40px;
+            border-bottom: 1px solid rgba(201,168,76,0.15);
+        }
+        .brand {
+            font-family: var(--font-display); font-size: 28px;
+            letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold);
+        }
+        .nav { display: flex; gap: 8px; }
+        .nav a {
+            font-family: var(--font-heading); font-weight: 300; font-size: 13px;
+            letter-spacing: 0.15em; text-transform: uppercase;
+            color: var(--cream-dim); text-decoration: none;
+            padding: 8px 20px; border: 1px solid transparent;
+            transition: 0.4s ease;
+        }
+        .nav a:hover, .nav a.active { color: var(--gold); border-color: rgba(201,168,76,0.3); }
+
+        /* Controls bar */
+        .controls-bar {
+            display: flex; align-items: center; gap: 16px;
+            padding: 16px 40px;
+            border-bottom: 1px solid rgba(201,168,76,0.08);
+        }
+        .view-toggle {
+            display: flex; gap: 0; border: 1px solid rgba(201,168,76,0.2); border-radius: 6px; overflow: hidden;
+        }
+        .view-btn {
+            font-family: var(--font-heading); font-size: 11px; letter-spacing: 0.12em;
+            text-transform: uppercase; padding: 10px 24px;
+            background: transparent; color: var(--cream-dim); border: none; cursor: pointer;
+            transition: 0.3s ease;
+        }
+        .view-btn.active { background: rgba(201,168,76,0.15); color: var(--gold); }
+        .view-btn:hover:not(.active) { background: rgba(201,168,76,0.05); }
+
+        .signal-btn {
+            font-family: var(--font-heading); font-size: 11px; letter-spacing: 0.12em;
+            text-transform: uppercase; padding: 10px 24px;
+            background: transparent; color: var(--teal); border: 1px solid rgba(61,232,199,0.3);
+            border-radius: 6px; cursor: pointer; transition: 0.3s ease; margin-left: auto;
+        }
+        .signal-btn:hover { background: rgba(61,232,199,0.1); }
+        .signal-btn.running { background: rgba(61,232,199,0.15); animation: pulse-btn 1.5s infinite; }
+        @keyframes pulse-btn { 0%,100%{opacity:1}50%{opacity:0.7} }
+
+        .legend { display: flex; gap: 16px; margin-left: 24px; }
+        .legend-item {
+            display: flex; align-items: center; gap: 6px;
+            font-family: var(--font-heading); font-size: 9px;
+            letter-spacing: 0.1em; text-transform: uppercase; color: var(--cream-dim);
+        }
+        .legend-color {
+            width: 12px; height: 3px; border-radius: 1px;
+        }
+
+        /* SVG canvas area */
+        .schematic-viewport {
+            flex: 1; padding: 20px 40px; overflow: auto;
+            display: flex; justify-content: center;
+        }
+        .schematic-svg { max-width: 1200px; width: 100%; }
+
+        /* Component info panel (tooltip) */
+        .comp-tooltip {
+            position: fixed;
+            background: var(--charcoal);
+            border: 1px solid rgba(201,168,76,0.3);
+            border-radius: 8px;
+            padding: 16px 20px;
+            min-width: 240px;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.3s, transform 0.3s;
+            z-index: 999;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        }
+        .comp-tooltip.visible { opacity: 1; transform: translateY(0); }
+        .comp-tooltip h3 {
+            font-family: var(--font-heading); font-size: 12px;
+            letter-spacing: 0.15em; text-transform: uppercase;
+            color: var(--gold); margin-bottom: 8px;
+        }
+        .comp-tooltip table {
+            font-family: var(--font-mono); font-size: 11px; color: var(--cream-dim);
+            border-collapse: collapse; width: 100%;
+        }
+        .comp-tooltip td { padding: 3px 0; }
+        .comp-tooltip td:first-child { color: var(--cream); padding-right: 12px; white-space: nowrap; }
+
+        /* SVG Styles */
+        svg text { font-family: 'Josefin Sans', sans-serif; }
+        .node-block {
+            cursor: pointer;
+            transition: filter 0.3s;
+        }
+        .node-block:hover { filter: brightness(1.2); }
+
+        /* Signal animation */
+        .signal-path {
+            fill: none;
+            stroke-dasharray: 8 6;
+            stroke-dashoffset: 0;
+        }
+        .signal-path.animate {
+            animation: signal-flow 1.2s linear infinite;
+        }
+        @keyframes signal-flow {
+            to { stroke-dashoffset: -28; }
+        }
+
+        .signal-dot {
+            opacity: 0;
+        }
+        .signal-dot.animate {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="brand">CATFEED PRO</div>
+    <nav class="nav">
+        <a href="/">Симулятор</a>
+        <a href="/schematic" class="active">Эмулятор</a>
+        <a href="/analytics">Аналитика</a>
+        <a href="/settings">Настройки</a>
+    </nav>
+</header>
+
+<div class="controls-bar">
+    <div class="view-toggle">
+        <button class="view-btn active" onclick="switchView('block')" id="btn-block">Блок-схема</button>
+        <button class="view-btn" onclick="switchView('detailed')" id="btn-detailed">Принципиальная</button>
+    </div>
+
+    <button class="signal-btn" id="signal-btn" onclick="toggleSignalAnimation()">▶ Анимация сигналов</button>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-color" style="background: var(--teal);"></div>Данные</div>
+        <div class="legend-item"><div class="legend-color" style="background: var(--ruby);"></div>Питание</div>
+        <div class="legend-item"><div class="legend-color" style="background: var(--gold);"></div>I2C</div>
+        <div class="legend-item"><div class="legend-color" style="background: var(--sapphire);"></div>WiFi/MQTT</div>
+        <div class="legend-item"><div class="legend-color" style="background: var(--violet);"></div>Telegram</div>
+    </div>
+</div>
+
+<div class="schematic-viewport">
+    <!-- ══ BLOCK DIAGRAM ══ -->
+    <svg id="svg-block" class="schematic-svg" viewBox="0 0 1100 700" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <filter id="glow">
+                <feGaussianBlur stdDeviation="3" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <marker id="arrow-teal" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="#3DE8C7"/>
+            </marker>
+            <marker id="arrow-gold" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="#C9A84C"/>
+            </marker>
+            <marker id="arrow-ruby" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="#FF4136"/>
+            </marker>
+            <marker id="arrow-sapphire" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="#5DADE2"/>
+            </marker>
+            <marker id="arrow-violet" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="#9B59B6"/>
+            </marker>
+        </defs>
+
+        <!-- Background grid -->
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <rect width="40" height="40" fill="none"/>
+            <line x1="40" y1="0" x2="40" y2="40" stroke="rgba(201,168,76,0.04)" stroke-width="0.5"/>
+            <line x1="0" y1="40" x2="40" y2="40" stroke="rgba(201,168,76,0.04)" stroke-width="0.5"/>
+        </pattern>
+        <rect width="1100" height="700" fill="url(#grid)"/>
+
+        <!-- Title -->
+        <text x="550" y="30" text-anchor="middle" fill="#C9A84C" font-size="14" letter-spacing="6" font-weight="300" style="text-transform:uppercase;">Блок-схема · Smart Cat Feeder</text>
+
+        <!-- ═══ POWER SUPPLY ═══ -->
+        <g class="node-block" data-comp="power" transform="translate(80,80)">
+            <rect width="160" height="80" rx="8" fill="rgba(255,65,54,0.08)" stroke="rgba(255,65,54,0.3)" stroke-width="1.5"/>
+            <text x="80" y="32" text-anchor="middle" fill="#FF4136" font-size="11" font-weight="600" letter-spacing="2">ПИТАНИЕ</text>
+            <text x="80" y="50" text-anchor="middle" fill="#D4C9A8" font-size="10">5V USB / Li-Ion</text>
+            <text x="80" y="64" text-anchor="middle" fill="#8B6914" font-size="9">AMS1117-3.3 + INA219</text>
+        </g>
+
+        <!-- ═══ ESP32 MCU (center) ═══ -->
+        <g class="node-block" data-comp="esp32" transform="translate(400,200)">
+            <rect width="240" height="140" rx="12" fill="rgba(201,168,76,0.06)" stroke="rgba(201,168,76,0.4)" stroke-width="2"/>
+            <rect x="4" y="4" width="232" height="132" rx="9" fill="none" stroke="rgba(201,168,76,0.1)" stroke-width="0.5"/>
+            <text x="120" y="36" text-anchor="middle" fill="#C9A84C" font-size="16" font-weight="700" letter-spacing="3">ESP32</text>
+            <text x="120" y="56" text-anchor="middle" fill="#D4C9A8" font-size="10">WROOM-32 · 240MHz Dual-Core</text>
+            <text x="120" y="74" text-anchor="middle" fill="#8B6914" font-size="9">520KB SRAM · WiFi · BLE 4.2</text>
+            <!-- Pin labels -->
+            <text x="12" y="100" fill="#3DE8C7" font-size="8" font-family="'JetBrains Mono'">GPIO4,5 → HX711</text>
+            <text x="12" y="114" fill="#3DE8C7" font-size="8" font-family="'JetBrains Mono'">GPIO18  → SG90</text>
+            <text x="12" y="128" fill="#3DE8C7" font-size="8" font-family="'JetBrains Mono'">GPIO19  → HC-SR501</text>
+            <text x="148" y="100" fill="#E8D48B" font-size="8" font-family="'JetBrains Mono'">I2C SDA/SCL → OLED</text>
+            <text x="148" y="114" fill="#E8D48B" font-size="8" font-family="'JetBrains Mono'">I2C 0x40  → INA219</text>
+            <text x="148" y="128" fill="#3DE8C7" font-size="8" font-family="'JetBrains Mono'">GPIO23    → DHT22</text>
+        </g>
+
+        <!-- ═══ HX711 WEIGHT ═══ -->
+        <g class="node-block" data-comp="hx711" transform="translate(80,240)">
+            <rect width="160" height="70" rx="8" fill="rgba(61,232,199,0.06)" stroke="rgba(61,232,199,0.3)" stroke-width="1.5"/>
+            <text x="80" y="28" text-anchor="middle" fill="#3DE8C7" font-size="11" font-weight="600" letter-spacing="2">HX711</text>
+            <text x="80" y="44" text-anchor="middle" fill="#D4C9A8" font-size="10">Весы миски</text>
+            <text x="80" y="58" text-anchor="middle" fill="#8B6914" font-size="9">24-bit ADC · 80 SPS</text>
+        </g>
+
+        <!-- ═══ SG90 SERVO ═══ -->
+        <g class="node-block" data-comp="sg90" transform="translate(80,360)">
+            <rect width="160" height="70" rx="8" fill="rgba(61,232,199,0.06)" stroke="rgba(61,232,199,0.3)" stroke-width="1.5"/>
+            <text x="80" y="28" text-anchor="middle" fill="#3DE8C7" font-size="11" font-weight="600" letter-spacing="2">SG90 SERVO</text>
+            <text x="80" y="44" text-anchor="middle" fill="#D4C9A8" font-size="10">Дозатор корма</text>
+            <text x="80" y="58" text-anchor="middle" fill="#8B6914" font-size="9">180° · 1.8kg·cm · PWM</text>
+        </g>
+
+        <!-- ═══ HC-SR501 IR ═══ -->
+        <g class="node-block" data-comp="hcsr501" transform="translate(80,480)">
+            <rect width="160" height="70" rx="8" fill="rgba(61,232,199,0.06)" stroke="rgba(61,232,199,0.3)" stroke-width="1.5"/>
+            <text x="80" y="28" text-anchor="middle" fill="#3DE8C7" font-size="11" font-weight="600" letter-spacing="2">HC-SR501</text>
+            <text x="80" y="44" text-anchor="middle" fill="#D4C9A8" font-size="10">PIR детектор кота</text>
+            <text x="80" y="58" text-anchor="middle" fill="#8B6914" font-size="9">3-7м · 120° · 3.3V</text>
+        </g>
+
+        <!-- ═══ DHT22 ═══ -->
+        <g class="node-block" data-comp="dht22" transform="translate(80,600)">
+            <rect width="160" height="60" rx="8" fill="rgba(61,232,199,0.06)" stroke="rgba(61,232,199,0.3)" stroke-width="1.5"/>
+            <text x="80" y="25" text-anchor="middle" fill="#3DE8C7" font-size="11" font-weight="600" letter-spacing="2">DHT22</text>
+            <text x="80" y="42" text-anchor="middle" fill="#D4C9A8" font-size="10">Температура / Влажность</text>
+        </g>
+
+        <!-- ═══ SSD1306 OLED ═══ -->
+        <g class="node-block" data-comp="oled" transform="translate(780,200)">
+            <rect width="180" height="80" rx="8" fill="rgba(201,168,76,0.06)" stroke="rgba(201,168,76,0.3)" stroke-width="1.5"/>
+            <rect x="20" y="30" width="140" height="40" rx="3" fill="rgba(0,0,0,0.5)" stroke="rgba(61,232,199,0.2)" stroke-width="1"/>
+            <text x="90" y="22" text-anchor="middle" fill="#E8D48B" font-size="11" font-weight="600" letter-spacing="2">SSD1306 OLED</text>
+            <text x="90" y="55" text-anchor="middle" fill="#3DE8C7" font-size="9" font-family="'JetBrains Mono'">128×64 · I2C 0x3C</text>
+        </g>
+
+        <!-- ═══ WiFi/MQTT Cloud ═══ -->
+        <g class="node-block" data-comp="wifi" transform="translate(780,360)">
+            <rect width="180" height="80" rx="8" fill="rgba(93,173,226,0.06)" stroke="rgba(93,173,226,0.3)" stroke-width="1.5"/>
+            <text x="90" y="28" text-anchor="middle" fill="#5DADE2" font-size="11" font-weight="600" letter-spacing="2">WiFi · MQTT</text>
+            <text x="90" y="46" text-anchor="middle" fill="#D4C9A8" font-size="10">Mosquitto Broker</text>
+            <text x="90" y="60" text-anchor="middle" fill="#8B6914" font-size="9">802.11 b/g/n · QoS 1</text>
+        </g>
+
+        <!-- ═══ Backend ═══ -->
+        <g class="node-block" data-comp="backend" transform="translate(780,490)">
+            <rect width="180" height="70" rx="8" fill="rgba(93,173,226,0.06)" stroke="rgba(93,173,226,0.3)" stroke-width="1.5"/>
+            <text x="90" y="28" text-anchor="middle" fill="#5DADE2" font-size="11" font-weight="600" letter-spacing="2">BACKEND</text>
+            <text x="90" y="44" text-anchor="middle" fill="#D4C9A8" font-size="10">Node.js / Express</text>
+            <text x="90" y="58" text-anchor="middle" fill="#8B6914" font-size="9">REST API · WebSocket</text>
+        </g>
+
+        <!-- ═══ Telegram Bot ═══ -->
+        <g class="node-block" data-comp="telegram" transform="translate(780,600)">
+            <rect width="180" height="60" rx="8" fill="rgba(155,89,182,0.08)" stroke="rgba(155,89,182,0.3)" stroke-width="1.5"/>
+            <text x="90" y="25" text-anchor="middle" fill="#9B59B6" font-size="11" font-weight="600" letter-spacing="2">TELEGRAM БОТ</text>
+            <text x="90" y="42" text-anchor="middle" fill="#D4C9A8" font-size="10">Пульт управления</text>
+        </g>
+
+        <!-- ═══ CONNECTION LINES ═══ -->
+        <!-- Power → ESP32 -->
+        <line x1="240" y1="120" x2="400" y2="240" stroke="rgba(255,65,54,0.4)" stroke-width="1.5" marker-end="url(#arrow-ruby)" class="signal-path" id="sig-pwr"/>
+
+        <!-- HX711 → ESP32 -->
+        <line x1="240" y1="275" x2="400" y2="275" stroke="rgba(61,232,199,0.4)" stroke-width="1.5" marker-end="url(#arrow-teal)" class="signal-path" id="sig-hx711"/>
+
+        <!-- SG90 → ESP32 -->
+        <line x1="240" y1="395" x2="400" y2="320" stroke="rgba(61,232,199,0.4)" stroke-width="1.5" marker-end="url(#arrow-teal)" class="signal-path" id="sig-sg90"/>
+
+        <!-- HC-SR501 → ESP32 -->
+        <path d="M240,515 Q320,515 380,340" fill="none" stroke="rgba(61,232,199,0.4)" stroke-width="1.5" marker-end="url(#arrow-teal)" class="signal-path" id="sig-ir"/>
+
+        <!-- DHT22 → ESP32 -->
+        <path d="M240,630 Q340,630 420,340" fill="none" stroke="rgba(61,232,199,0.4)" stroke-width="1.5" marker-end="url(#arrow-teal)" class="signal-path" id="sig-dht"/>
+
+        <!-- ESP32 → OLED (I2C) -->
+        <line x1="640" y1="250" x2="780" y2="240" stroke="rgba(201,168,76,0.5)" stroke-width="1.5" marker-end="url(#arrow-gold)" class="signal-path" id="sig-oled"/>
+
+        <!-- ESP32 → WiFi -->
+        <line x1="640" y1="320" x2="780" y2="390" stroke="rgba(93,173,226,0.4)" stroke-width="1.5" marker-end="url(#arrow-sapphire)" class="signal-path" id="sig-wifi"/>
+
+        <!-- WiFi → Backend -->
+        <line x1="870" y1="440" x2="870" y2="490" stroke="rgba(93,173,226,0.4)" stroke-width="1.5" marker-end="url(#arrow-sapphire)" class="signal-path" id="sig-mqtt"/>
+
+        <!-- Backend → Telegram -->
+        <line x1="870" y1="560" x2="870" y2="600" stroke="rgba(155,89,182,0.4)" stroke-width="1.5" marker-end="url(#arrow-violet)" class="signal-path" id="sig-tg"/>
+
+        <!-- Power → INA219 label -->
+        <text x="310" y="170" fill="#FF4136" font-size="8" font-family="'JetBrains Mono'" opacity="0.6">5V / 3.3V</text>
+
+        <!-- Bus labels -->
+        <text x="300" y="268" fill="#3DE8C7" font-size="8" font-family="'JetBrains Mono'" opacity="0.6">GPIO4,5</text>
+        <text x="300" y="360" fill="#3DE8C7" font-size="8" font-family="'JetBrains Mono'" opacity="0.6">GPIO18 PWM</text>
+        <text x="300" y="460" fill="#3DE8C7" font-size="8" font-family="'JetBrains Mono'" opacity="0.6">GPIO19</text>
+        <text x="690" y="242" fill="#E8D48B" font-size="8" font-family="'JetBrains Mono'" opacity="0.6">I2C</text>
+        <text x="690" y="346" fill="#5DADE2" font-size="8" font-family="'JetBrains Mono'" opacity="0.6">WiFi 2.4GHz</text>
+        <text x="880" y="478" fill="#5DADE2" font-size="8" font-family="'JetBrains Mono'" opacity="0.6">MQTT</text>
+        <text x="880" y="590" fill="#9B59B6" font-size="8" font-family="'JetBrains Mono'" opacity="0.6">HTTP API</text>
+    </svg>
+
+    <!-- ══ DETAILED SCHEMATIC ══ -->
+    <svg id="svg-detailed" class="schematic-svg" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+        <rect width="1200" height="800" fill="url(#grid)"/>
+        <text x="600" y="30" text-anchor="middle" fill="#C9A84C" font-size="14" letter-spacing="6" font-weight="300">Принципиальная схема · Smart Cat Feeder</text>
+
+        <!-- ═══ ESP32 PINOUT (center) ═══ -->
+        <g transform="translate(380,120)">
+            <rect width="320" height="500" rx="6" fill="rgba(201,168,76,0.04)" stroke="rgba(201,168,76,0.3)" stroke-width="2"/>
+            <rect x="100" y="10" width="120" height="30" rx="4" fill="rgba(201,168,76,0.1)" stroke="rgba(201,168,76,0.3)"/>
+            <text x="160" y="30" text-anchor="middle" fill="#C9A84C" font-size="12" font-weight="600" letter-spacing="2">ESP32-WROOM-32</text>
+
+            <!-- Left pins -->
+            <g fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">
+                <!-- Power pins -->
+                <text x="-8" y="80" text-anchor="end" fill="#FF4136">3V3</text>
+                <rect x="0" y="72" width="30" height="12" rx="2" fill="rgba(255,65,54,0.15)" stroke="rgba(255,65,54,0.3)"/>
+                <text x="15" y="81" text-anchor="middle" fill="#FF4136" font-size="7">3V3</text>
+
+                <text x="-8" y="100" text-anchor="end" fill="#FF4136">GND</text>
+                <rect x="0" y="92" width="30" height="12" rx="2" fill="rgba(255,65,54,0.15)" stroke="rgba(255,65,54,0.3)"/>
+                <text x="15" y="101" text-anchor="middle" fill="#FF4136" font-size="7">GND</text>
+
+                <!-- GPIO4 — HX711 DOUT -->
+                <text x="-8" y="140" text-anchor="end" fill="#3DE8C7">GPIO4</text>
+                <rect x="0" y="132" width="30" height="12" rx="2" fill="rgba(61,232,199,0.1)" stroke="rgba(61,232,199,0.3)"/>
+                <text x="15" y="141" text-anchor="middle" fill="#3DE8C7" font-size="7">D4</text>
+
+                <!-- GPIO5 — HX711 SCK -->
+                <text x="-8" y="160" text-anchor="end" fill="#3DE8C7">GPIO5</text>
+                <rect x="0" y="152" width="30" height="12" rx="2" fill="rgba(61,232,199,0.1)" stroke="rgba(61,232,199,0.3)"/>
+                <text x="15" y="161" text-anchor="middle" fill="#3DE8C7" font-size="7">D5</text>
+
+                <!-- GPIO18 — SG90 PWM -->
+                <text x="-8" y="200" text-anchor="end" fill="#3DE8C7">GPIO18</text>
+                <rect x="0" y="192" width="30" height="12" rx="2" fill="rgba(61,232,199,0.1)" stroke="rgba(61,232,199,0.3)"/>
+                <text x="15" y="201" text-anchor="middle" fill="#3DE8C7" font-size="7">D18</text>
+
+                <!-- GPIO19 — HC-SR501 -->
+                <text x="-8" y="240" text-anchor="end" fill="#3DE8C7">GPIO19</text>
+                <rect x="0" y="232" width="30" height="12" rx="2" fill="rgba(61,232,199,0.1)" stroke="rgba(61,232,199,0.3)"/>
+                <text x="15" y="241" text-anchor="middle" fill="#3DE8C7" font-size="7">D19</text>
+
+                <!-- GPIO23 — DHT22 -->
+                <text x="-8" y="280" text-anchor="end" fill="#3DE8C7">GPIO23</text>
+                <rect x="0" y="272" width="30" height="12" rx="2" fill="rgba(61,232,199,0.1)" stroke="rgba(61,232,199,0.3)"/>
+                <text x="15" y="281" text-anchor="middle" fill="#3DE8C7" font-size="7">D23</text>
+            </g>
+
+            <!-- Right pins (I2C) -->
+            <g fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">
+                <text x="328" y="140" fill="#E8D48B">GPIO21 (SDA)</text>
+                <rect x="290" y="132" width="30" height="12" rx="2" fill="rgba(201,168,76,0.1)" stroke="rgba(201,168,76,0.3)"/>
+                <text x="305" y="141" text-anchor="middle" fill="#E8D48B" font-size="7">D21</text>
+
+                <text x="328" y="160" fill="#E8D48B">GPIO22 (SCL)</text>
+                <rect x="290" y="152" width="30" height="12" rx="2" fill="rgba(201,168,76,0.1)" stroke="rgba(201,168,76,0.3)"/>
+                <text x="305" y="161" text-anchor="middle" fill="#E8D48B" font-size="7">D22</text>
+
+                <!-- WiFi antenna -->
+                <text x="328" y="240" fill="#5DADE2">WiFi Antenna</text>
+                <rect x="290" y="232" width="30" height="12" rx="2" fill="rgba(93,173,226,0.1)" stroke="rgba(93,173,226,0.3)"/>
+                <text x="305" y="241" text-anchor="middle" fill="#5DADE2" font-size="7">ANT</text>
+            </g>
+
+            <!-- Internal blocks -->
+            <rect x="60" y="320" width="200" height="40" rx="4" fill="rgba(93,173,226,0.06)" stroke="rgba(93,173,226,0.2)"/>
+            <text x="160" y="344" text-anchor="middle" fill="#5DADE2" font-size="10">Xtensa LX6 · 240MHz × 2</text>
+
+            <rect x="60" y="380" width="95" height="30" rx="4" fill="rgba(61,232,199,0.06)" stroke="rgba(61,232,199,0.2)"/>
+            <text x="107" y="399" text-anchor="middle" fill="#3DE8C7" font-size="9">520KB SRAM</text>
+
+            <rect x="165" y="380" width="95" height="30" rx="4" fill="rgba(61,232,199,0.06)" stroke="rgba(61,232,199,0.2)"/>
+            <text x="212" y="399" text-anchor="middle" fill="#3DE8C7" font-size="9">4MB Flash</text>
+
+            <rect x="60" y="430" width="200" height="30" rx="4" fill="rgba(93,173,226,0.06)" stroke="rgba(93,173,226,0.2)"/>
+            <text x="160" y="449" text-anchor="middle" fill="#5DADE2" font-size="9">WiFi 802.11 b/g/n + BLE 4.2</text>
+
+            <rect x="60" y="476" width="200" height="24" rx="4" fill="rgba(201,168,76,0.06)" stroke="rgba(201,168,76,0.15)"/>
+            <text x="160" y="492" text-anchor="middle" fill="#C9A84C" font-size="9">34 GPIO · 12-bit ADC · PWM</text>
+        </g>
+
+        <!-- ═══ LEFT PERIPHERALS (with pin wiring) ═══ -->
+
+        <!-- Power Supply -->
+        <g class="node-block" data-comp="power" transform="translate(30,80)">
+            <rect width="200" height="100" rx="6" fill="rgba(255,65,54,0.05)" stroke="rgba(255,65,54,0.3)" stroke-width="1.5"/>
+            <text x="100" y="22" text-anchor="middle" fill="#FF4136" font-size="10" font-weight="600" letter-spacing="2">БЛОК ПИТАНИЯ</text>
+            <line x1="10" y1="30" x2="190" y2="30" stroke="rgba(255,65,54,0.15)"/>
+            <text x="14" y="48" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">USB-C → 5V / 2A</text>
+            <text x="14" y="64" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">AMS1117-3.3 → 3.3V</text>
+            <text x="14" y="80" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">Li-Ion 18650 backup</text>
+            <text x="14" y="92" fill="#8B6914" font-size="8">Dropout: 1.1V · Max: 1A</text>
+        </g>
+        <line x1="230" y1="130" x2="380" y2="192" stroke="rgba(255,65,54,0.3)" stroke-width="1" stroke-dasharray="4 3" class="signal-path" id="dsig-pwr"/>
+
+        <!-- INA219 -->
+        <g class="node-block" data-comp="ina219" transform="translate(30,220)">
+            <rect width="200" height="80" rx="6" fill="rgba(201,168,76,0.04)" stroke="rgba(201,168,76,0.2)" stroke-width="1.5"/>
+            <text x="100" y="22" text-anchor="middle" fill="#E8D48B" font-size="10" font-weight="600" letter-spacing="2">INA219</text>
+            <text x="14" y="42" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">I2C addr: 0x40</text>
+            <text x="14" y="58" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">26V / 3.2A max</text>
+            <text x="14" y="72" fill="#8B6914" font-size="8">12-bit · Shunt + Bus V</text>
+        </g>
+
+        <!-- HX711 -->
+        <g class="node-block" data-comp="hx711" transform="translate(30,340)">
+            <rect width="200" height="90" rx="6" fill="rgba(61,232,199,0.04)" stroke="rgba(61,232,199,0.25)" stroke-width="1.5"/>
+            <text x="100" y="22" text-anchor="middle" fill="#3DE8C7" font-size="10" font-weight="600" letter-spacing="2">HX711 + LOAD CELL</text>
+            <line x1="10" y1="30" x2="190" y2="30" stroke="rgba(61,232,199,0.1)"/>
+            <text x="14" y="48" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">DOUT → GPIO4</text>
+            <text x="14" y="62" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">SCK  → GPIO5</text>
+            <text x="14" y="76" fill="#8B6914" font-size="8">24-bit ADC · 10/80 SPS</text>
+            <text x="14" y="88" fill="#8B6914" font-size="8">Full-bridge strain gauge</text>
+        </g>
+        <line x1="230" y1="380" x2="380" y2="254" stroke="rgba(61,232,199,0.25)" stroke-width="1" stroke-dasharray="4 3" class="signal-path" id="dsig-hx711"/>
+
+        <!-- SG90 -->
+        <g class="node-block" data-comp="sg90" transform="translate(30,470)">
+            <rect width="200" height="80" rx="6" fill="rgba(61,232,199,0.04)" stroke="rgba(61,232,199,0.25)" stroke-width="1.5"/>
+            <text x="100" y="22" text-anchor="middle" fill="#3DE8C7" font-size="10" font-weight="600" letter-spacing="2">SG90 SERVO</text>
+            <text x="14" y="42" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">Signal → GPIO18 (PWM)</text>
+            <text x="14" y="58" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">VCC: 5V · GND</text>
+            <text x="14" y="72" fill="#8B6914" font-size="8">180° · 1.8kg·cm · 50Hz</text>
+        </g>
+        <line x1="230" y1="510" x2="380" y2="312" stroke="rgba(61,232,199,0.25)" stroke-width="1" stroke-dasharray="4 3" class="signal-path" id="dsig-sg90"/>
+
+        <!-- HC-SR501 -->
+        <g class="node-block" data-comp="hcsr501" transform="translate(30,590)">
+            <rect width="200" height="70" rx="6" fill="rgba(61,232,199,0.04)" stroke="rgba(61,232,199,0.25)" stroke-width="1.5"/>
+            <text x="100" y="22" text-anchor="middle" fill="#3DE8C7" font-size="10" font-weight="600" letter-spacing="2">HC-SR501 PIR</text>
+            <text x="14" y="42" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">OUT → GPIO19</text>
+            <text x="14" y="58" fill="#8B6914" font-size="8">3-7m · 120° · 3.3V logic</text>
+        </g>
+        <path d="M230,625 Q310,625 370,352" fill="none" stroke="rgba(61,232,199,0.25)" stroke-width="1" stroke-dasharray="4 3" class="signal-path" id="dsig-ir"/>
+
+        <!-- DHT22 -->
+        <g class="node-block" data-comp="dht22" transform="translate(30,700)">
+            <rect width="200" height="60" rx="6" fill="rgba(61,232,199,0.04)" stroke="rgba(61,232,199,0.25)" stroke-width="1.5"/>
+            <text x="100" y="22" text-anchor="middle" fill="#3DE8C7" font-size="10" font-weight="600" letter-spacing="2">DHT22</text>
+            <text x="14" y="42" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">DATA → GPIO23 (pull-up 4.7kΩ)</text>
+            <text x="14" y="54" fill="#8B6914" font-size="8">-40..80°C ±0.5° · 0-100% RH</text>
+        </g>
+        <path d="M230,730 Q340,730 400,392" fill="none" stroke="rgba(61,232,199,0.25)" stroke-width="1" stroke-dasharray="4 3" class="signal-path" id="dsig-dht"/>
+
+        <!-- ═══ RIGHT PERIPHERALS ═══ -->
+
+        <!-- OLED -->
+        <g class="node-block" data-comp="oled" transform="translate(880,120)">
+            <rect width="220" height="100" rx="6" fill="rgba(201,168,76,0.04)" stroke="rgba(201,168,76,0.25)" stroke-width="1.5"/>
+            <text x="110" y="22" text-anchor="middle" fill="#E8D48B" font-size="10" font-weight="600" letter-spacing="2">SSD1306 OLED</text>
+            <line x1="10" y1="30" x2="210" y2="30" stroke="rgba(201,168,76,0.1)"/>
+            <rect x="30" y="40" width="160" height="50" rx="3" fill="#000" stroke="rgba(61,232,199,0.15)"/>
+            <text x="110" y="62" text-anchor="middle" fill="#3DE8C7" font-size="10" font-family="'JetBrains Mono'">128 × 64</text>
+            <text x="110" y="78" text-anchor="middle" fill="#8B6914" font-size="8">I2C 0x3C · SDA/SCL</text>
+        </g>
+        <line x1="700" y1="252" x2="880" y2="170" stroke="rgba(201,168,76,0.3)" stroke-width="1" stroke-dasharray="4 3" class="signal-path" id="dsig-oled"/>
+
+        <!-- I2C Bus label -->
+        <g transform="translate(760,240)">
+            <rect width="80" height="20" rx="3" fill="rgba(201,168,76,0.08)" stroke="rgba(201,168,76,0.2)"/>
+            <text x="40" y="14" text-anchor="middle" fill="#E8D48B" font-size="9" font-weight="600" letter-spacing="1">I2C BUS</text>
+        </g>
+
+        <!-- INA219 I2C line -->
+        <path d="M700,260 L800,260 L800,280 L230,280 L230,260" fill="none" stroke="rgba(201,168,76,0.2)" stroke-width="1" stroke-dasharray="4 3" class="signal-path" id="dsig-ina"/>
+
+        <!-- WiFi cloud -->
+        <g class="node-block" data-comp="wifi" transform="translate(880,320)">
+            <rect width="220" height="120" rx="6" fill="rgba(93,173,226,0.04)" stroke="rgba(93,173,226,0.25)" stroke-width="1.5"/>
+            <text x="110" y="22" text-anchor="middle" fill="#5DADE2" font-size="10" font-weight="600" letter-spacing="2">NETWORK STACK</text>
+            <line x1="10" y1="30" x2="210" y2="30" stroke="rgba(93,173,226,0.1)"/>
+            <text x="14" y="48" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">WiFi 802.11 b/g/n</text>
+            <text x="14" y="64" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">MQTT Paho → Mosquitto</text>
+            <text x="14" y="80" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">Topics: feeder/+/telemetry</text>
+            <text x="14" y="96" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">         feeder/+/commands</text>
+            <text x="14" y="110" fill="#8B6914" font-size="8">QoS 0 telemetry · QoS 1 events</text>
+        </g>
+        <line x1="700" y1="352" x2="880" y2="370" stroke="rgba(93,173,226,0.25)" stroke-width="1" stroke-dasharray="4 3" class="signal-path" id="dsig-wifi"/>
+
+        <!-- Backend + Telegram -->
+        <g class="node-block" data-comp="backend" transform="translate(880,490)">
+            <rect width="220" height="80" rx="6" fill="rgba(93,173,226,0.04)" stroke="rgba(93,173,226,0.2)" stroke-width="1.5"/>
+            <text x="110" y="22" text-anchor="middle" fill="#5DADE2" font-size="10" font-weight="600" letter-spacing="2">BACKEND API</text>
+            <text x="14" y="42" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">Node.js + Express + Prisma</text>
+            <text x="14" y="58" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">SQLite · Socket.io</text>
+            <text x="14" y="72" fill="#8B6914" font-size="8">REST /api/devices/:id/*</text>
+        </g>
+        <line x1="990" y1="440" x2="990" y2="490" stroke="rgba(93,173,226,0.2)" stroke-width="1" stroke-dasharray="4 3" class="signal-path" id="dsig-mqtt"/>
+
+        <g class="node-block" data-comp="telegram" transform="translate(880,620)">
+            <rect width="220" height="70" rx="6" fill="rgba(155,89,182,0.06)" stroke="rgba(155,89,182,0.25)" stroke-width="1.5"/>
+            <text x="110" y="22" text-anchor="middle" fill="#9B59B6" font-size="10" font-weight="600" letter-spacing="2">TELEGRAM ПУЛЬТ</text>
+            <text x="14" y="42" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">python-telegram-bot v20</text>
+            <text x="14" y="58" fill="#D4C9A8" font-size="9" font-family="'JetBrains Mono'">httpx → Backend REST</text>
+        </g>
+        <line x1="990" y1="570" x2="990" y2="620" stroke="rgba(155,89,182,0.2)" stroke-width="1" stroke-dasharray="4 3" class="signal-path" id="dsig-tg"/>
+    </svg>
+</div>
+
+<!-- Component tooltip -->
+<div class="comp-tooltip" id="tooltip"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// COMPONENT SPECS
+// ══════════════════════════════════════════════
+const specs = {
+    esp32: {
+        name: 'ESP32-WROOM-32',
+        rows: [
+            ['CPU', 'Xtensa LX6 Dual-Core 240MHz'],
+            ['SRAM', '520 KB'],
+            ['Flash', '4 MB'],
+            ['WiFi', '802.11 b/g/n 2.4GHz'],
+            ['BLE', '4.2 + Mesh'],
+            ['GPIO', '34 программируемых'],
+            ['ADC', '12-bit SAR, 18 каналов'],
+            ['PWM', '16 каналов LED PWM'],
+            ['I2C', '2 шины'],
+            ['Питание', '2.2V – 3.6V'],
+        ]
+    },
+    hx711: {
+        name: 'HX711 + Тензодатчик',
+        rows: [
+            ['Разрешение', '24 бит'],
+            ['Частота', '10 / 80 SPS'],
+            ['Усиление', '32 / 64 / 128'],
+            ['Интерфейс', 'Serial (DOUT + SCK)'],
+            ['Датчик', 'Full-bridge strain gauge'],
+            ['Макс. вес', '5 кг'],
+            ['Питание', '2.6V – 5.5V'],
+        ]
+    },
+    sg90: {
+        name: 'SG90 Micro Servo',
+        rows: [
+            ['Угол', '0° – 180°'],
+            ['Момент', '1.8 кг·см (4.8V)'],
+            ['Скорость', '0.1с / 60° (4.8V)'],
+            ['Сигнал', 'PWM 50Hz (1-2ms)'],
+            ['Питание', '4.8V – 6V'],
+            ['Вес', '9 г'],
+        ]
+    },
+    hcsr501: {
+        name: 'HC-SR501 PIR',
+        rows: [
+            ['Дальность', '3 – 7 метров'],
+            ['Угол', '< 120°'],
+            ['Задержка', '0.3с – 200с'],
+            ['Выход', 'Digital HIGH/LOW'],
+            ['Логика', '3.3V TTL'],
+            ['Питание', '4.5V – 20V'],
+        ]
+    },
+    dht22: {
+        name: 'DHT22 (AM2302)',
+        rows: [
+            ['Температура', '-40°C … +80°C'],
+            ['Точность T', '± 0.5°C'],
+            ['Влажность', '0 – 100% RH'],
+            ['Точность RH', '± 2%'],
+            ['Интерфейс', 'Single-wire (pull-up 4.7kΩ)'],
+            ['Период', '> 2с между чтениями'],
+        ]
+    },
+    oled: {
+        name: 'SSD1306 OLED',
+        rows: [
+            ['Разрешение', '128 × 64 пикселей'],
+            ['Тип', 'OLED монохром (бело-голубой)'],
+            ['Интерфейс', 'I2C (адрес 0x3C)'],
+            ['Питание', '3.3V'],
+            ['Контраст', '256 уровней'],
+            ['Размер', '0.96"'],
+        ]
+    },
+    power: {
+        name: 'Блок питания',
+        rows: [
+            ['Вход', 'USB-C 5V / 2A'],
+            ['Регулятор', 'AMS1117-3.3 (LDO)'],
+            ['Выход', '3.3V для ESP32 + сенсоров'],
+            ['5V линия', 'Прямая для SG90 серво'],
+            ['Backup', 'Li-Ion 18650 3.7V'],
+            ['Dropout', '1.1V'],
+        ]
+    },
+    ina219: {
+        name: 'INA219',
+        rows: [
+            ['Интерфейс', 'I2C (адрес 0x40)'],
+            ['Напряжение', 'до 26V'],
+            ['Ток', 'до 3.2A'],
+            ['Разрешение', '12-bit ADC'],
+            ['Измерения', 'Shunt V + Bus V + Power'],
+        ]
+    },
+    wifi: {
+        name: 'WiFi / MQTT',
+        rows: [
+            ['Стандарт', '802.11 b/g/n 2.4GHz'],
+            ['Брокер', 'Eclipse Mosquitto 2'],
+            ['Протокол', 'MQTT 3.1.1'],
+            ['Telemetry', 'QoS 0 / каждые 5с'],
+            ['Events', 'QoS 1 / retained'],
+            ['Порт', '1883 (TCP) / 9001 (WS)'],
+        ]
+    },
+    backend: {
+        name: 'Backend API',
+        rows: [
+            ['Runtime', 'Node.js + TypeScript'],
+            ['Framework', 'Express.js'],
+            ['ORM', 'Prisma + SQLite'],
+            ['WebSocket', 'Socket.io'],
+            ['Порт', '3001'],
+        ]
+    },
+    telegram: {
+        name: 'Telegram Бот (Пульт)',
+        rows: [
+            ['Библиотека', 'python-telegram-bot v20'],
+            ['HTTP клиент', 'httpx (async)'],
+            ['Команды', '/status /feed /schedule /stats'],
+            ['Уведомления', 'Polling событий каждые 10с'],
+            ['Графики', 'matplotlib → PNG'],
+        ]
+    }
+};
+
+// ══════════════════════════════════════════════
+// VIEW SWITCHING
+// ══════════════════════════════════════════════
+let currentView = 'block';
+function switchView(view) {
+    currentView = view;
+    document.getElementById('svg-block').style.display = view === 'block' ? '' : 'none';
+    document.getElementById('svg-detailed').style.display = view === 'detailed' ? '' : 'none';
+    document.getElementById('btn-block').classList.toggle('active', view === 'block');
+    document.getElementById('btn-detailed').classList.toggle('active', view === 'detailed');
+    stopSignalAnimation();
+}
+
+// ══════════════════════════════════════════════
+// SIGNAL ANIMATION
+// ══════════════════════════════════════════════
+let animating = false;
+function toggleSignalAnimation() {
+    animating = !animating;
+    const btn = document.getElementById('signal-btn');
+    btn.textContent = animating ? '■ Остановить' : '▶ Анимация сигналов';
+    btn.classList.toggle('running', animating);
+
+    document.querySelectorAll('.signal-path').forEach(p => {
+        p.classList.toggle('animate', animating);
+    });
+}
+
+function stopSignalAnimation() {
+    animating = false;
+    const btn = document.getElementById('signal-btn');
+    btn.textContent = '▶ Анимация сигналов';
+    btn.classList.remove('running');
+    document.querySelectorAll('.signal-path').forEach(p => p.classList.remove('animate'));
+}
+
+// ══════════════════════════════════════════════
+// TOOLTIP
+// ══════════════════════════════════════════════
+const tooltip = document.getElementById('tooltip');
+
+document.querySelectorAll('.node-block').forEach(node => {
+    node.addEventListener('mouseenter', (e) => {
+        const comp = node.dataset.comp;
+        const spec = specs[comp];
+        if (!spec) return;
+
+        let html = '<h3>' + spec.name + '</h3><table>';
+        spec.rows.forEach(r => {
+            html += '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>';
+        });
+        html += '</table>';
+        tooltip.innerHTML = html;
+
+        const rect = node.getBoundingClientRect();
+        tooltip.style.left = (rect.right + 12) + 'px';
+        tooltip.style.top = rect.top + 'px';
+
+        // Keep tooltip in viewport
+        requestAnimationFrame(() => {
+            const tr = tooltip.getBoundingClientRect();
+            if (tr.right > window.innerWidth - 20) {
+                tooltip.style.left = (rect.left - tr.width - 12) + 'px';
+            }
+            if (tr.bottom > window.innerHeight - 20) {
+                tooltip.style.top = (window.innerHeight - tr.height - 20) + 'px';
+            }
+        });
+
+        tooltip.classList.add('visible');
+    });
+
+    node.addEventListener('mouseleave', () => {
+        tooltip.classList.remove('visible');
+    });
+});
+</script>
+</body>
+</html>

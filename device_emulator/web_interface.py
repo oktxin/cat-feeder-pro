@@ -29,8 +29,14 @@ def set_emulator(emu):
 
 @app.route('/')
 def index():
-    """Main dashboard page"""
-    return render_template('emulator_new.html')
+    """Main dashboard page — Art Deco simulator"""
+    return render_template('simulator.html')
+
+
+@app.route('/schematic')
+def schematic():
+    """Emulator schematic page — interactive circuit diagram"""
+    return render_template('schematic.html')
 
 
 @app.route('/analytics')
